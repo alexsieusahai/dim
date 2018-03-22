@@ -1,6 +1,9 @@
 Must do:
-When you're in insert mode edit the actual lines stored in memory
-Implement the common movement functions from vim
+Move `move up, down` into functions for the class so other functions can use them
+When 'w' is pressed it doesn't handle multiple row lines properly
+Implement `x` deletion
+Implement the common movement functions from vim (`w,e,0,$`)
+
 
 Wishlist:
 Get a save file system going similar to swap

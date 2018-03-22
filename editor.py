@@ -22,41 +22,36 @@ class ColorSchemes(Enum):
     # for the syntax highlighter mostly
     pass
 
-
+MAX_LINE_NUMBER_LENGTH = 4
 
 class Editor:
 
     def __init__(self):
         # handling curses
         self.stdscr = curses.initscr()
-        self.editorscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, self.stdscr.getmaxyx()[1]-4, 0, 4)
-        self.linenumscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, 4, 0, 0)
+        self.editorscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, self.stdscr.getmaxyx()[1]-(MAX_LINE_NUMBER_LENGTH+1), 0, MAX_LINE_NUMBER_LENGTH+1)
+        self.linenumscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, MAX_LINE_NUMBER_LENGTH+1, 0, 0)
         curses.noecho()
         curses.cbreak()
         curses.start_color() # have to make exceptions for terminals that don't support color
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK) # use as default for now
 
         # grabbing the lines from the file
-        self.fileName = 'a.cpp'
+        self.fileName = 'index.html'
         with open(self.fileName, 'r+') as f:
             self.fileLines = f.readlines()
-            
+
         # make and store the savefile here
 
         (maxY,maxX) = self.stdscr.getmaxyx()
-        for line in self.fileLines:
-            try:
-                self.editorscr.addstr(line)
-            except:
-                break
-
 
         # setting ui up
         self.editorscr.move(0,0)
         self.currentLine = 0
+        self.topLine = 0
         self.drawLines()
         self.state = State.NORMAL
-            
+
 
     def __exit__(self, exc_type, exc_value, traceback):
         #handling curses
@@ -77,26 +72,30 @@ class Editor:
     def drawLines(self):
         (oldy,oldx) = self.editorscr.getyx()
 
-        # draw lines
-        topLine = self.currentLine-oldy
+        self.linenumscr.clear()
+        self.editorscr.clear()
+
+        # draw line numbers
+        topLine = self.topLine
         y = 0
         self.linenumscr.move(0,0)
         for line in self.fileLines:
             self.linenumscr.addstr(str(topLine+1))
             increm = self.lineHeight(topLine)
             y += increm
-            topLine += 1 
-            self.linenumscr.move(y,0)
-            if y > self.linenumscr.getmaxyx()[0]-2:
-                self.linenumscr.addstr(str(topLine+1))
+            topLine += 1
+            if y > self.linenumscr.getmaxyx()[0]-1:
                 break
-        
+            self.linenumscr.move(y,0)
+
+        topLine = self.topLine
+        # draw the lines themselves
         self.editorscr.move(0,0)
         for i in range(self.editorscr.getmaxyx()[0]):
             try:
                 self.editorscr.addstr(self.fileLines[topLine+i])
-            except: 
-                a = 1
+            except:
+                a = 1 # some garbage
 
         self.linenumscr.refresh()
         self.editorscr.refresh()
@@ -105,6 +104,7 @@ class Editor:
 
     def run(self):
         while True:
+            self.drawLines()
             (y,x) = self.editorscr.getyx() # get cursor position relative to top left
             if self.state == State.NORMAL:
                 c = chr(self.editorscr.getch()) #get a key
@@ -117,17 +117,45 @@ class Editor:
                         self.currentLine += 1
                     elif len(self.fileLines)-self.currentLine > 0:
                         self.currentLine += 1
-                        self.drawLines()
+                        self.topLine += 1
                 if c == 'k': # up
                     if y > 0:
-                        self.editorscr.move(y-self.currentLineHeight(),x)
+                        self.editorscr.move(y-self.lineHeight(self.currentLine-1),x)
                         self.currentLine -= 1
-                if c == 'h': # left 
+                    elif self.currentLine > 0:
+                        self.currentLine -= 1
+                        self.topLine -= 1
+                if c == 'h': # left
                     if x > 0:
                         self.editorscr.move(y,x-1)
                 if c == 'l': # right
                     if x < self.editorscr.getmaxyx()[1]-1:
                         self.editorscr.move(y,x+1)
+
+                # jumping movement
+                if c == 'w': # jump to char before last space from left to right, after current char
+                    x += 1
+                    if self.fileLines[self.currentLine] == '\n':
+                        self.currentLine += 1
+                        self.editorscr.move(y+1,x-1)
+                        continue
+                    while self.fileLines[self.currentLine][x] != ' ':
+                        x += 1
+                        if x >= len(self.fileLines[self.currentLine]):
+                            x = 0
+                            self.currentLine += 1 # move down 1
+                            y += 1
+                    while self.fileLines[self.currentLine][x] == ' ':
+                        x += 1
+                        if x >= len(self.fileLines[self.currentLine]):
+                            x = 0
+                            self.currentLine += 1 # move down 1
+                            y += 1
+
+                    self.editorscr.move(y,x)
+                    pass
+                if c == 'b': # jump to char before last space from right to left, after current char
+                    pass
 
                 # move to different states
                 if c == 'i':
@@ -143,7 +171,10 @@ class Editor:
                 if ord(c) == 27:
                     self.state = State.NORMAL
                 else:
-                    self.editorscr.addstr(c)
+                    s = self.fileLines[self.currentLine]
+                    s = s[:x] + c + s[x:]
+                    self.fileLines[self.currentLine] = s
+                    self.editorscr.move(y,x+1)
 
             if self.state == State.VISUAL:
                 self.state = State.NORMAL
