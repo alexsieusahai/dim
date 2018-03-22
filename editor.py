@@ -48,13 +48,16 @@ class Editor:
         # setting ui up
         self.editorscr.move(0,0)
         self.currentLine = 0
+        self.currentLineIndex = 0
         self.topLine = 0
         self.drawLines()
         self.state = State.NORMAL
 
 
     def __exit__(self, exc_type, exc_value, traceback):
-        #handling curses
+        """
+        Prepares curses and filesystem for exit
+        """
         curses.echo()
         curses.nocbreak()
         self.stdscr.keypad(False)
@@ -62,47 +65,106 @@ class Editor:
         self.saveFile.close() # close the savefile
 
     def currentLineHeight(self):
+        """
+        Returns the height of the current line
+        """
         return self.lineHeight(self.currentLine)
 
     def lineHeight(self, lineNumber):
-        manyLines = len(self.fileLines[lineNumber])//self.stdscr.getmaxyx()[1]+1
+        """
+        Returns the height of line lineNumber
+        """
+        manyLines = len(self.fileLines[lineNumber])//(self.stdscr.getmaxyx()[1]-self.currentLineIndex)+1
         return manyLines if manyLines else 1
 
 
     def drawLines(self):
-        (oldy,oldx) = self.editorscr.getyx()
+        """
+        Draws the line numbers and the lines themselves onto the ui
+        O(n) where n is the number of blocks that can fit onto the terminal, but since n is very small and theta(n) is a fraction of n usually < n/2 this is fine.
+        """
 
+        # clear the old data off of the screen
         self.linenumscr.clear()
         self.editorscr.clear()
+
+        (moveY,moveX) = (0,0) # to move after
 
         # draw line numbers
         topLine = self.topLine
         y = 0
         self.linenumscr.move(0,0)
-        for line in self.fileLines:
+        while y < self.linenumscr.getmaxyx()[0]-1:
             self.linenumscr.addstr(str(topLine+1))
-            increm = self.lineHeight(topLine)
-            y += increm
+
+            if topLine == self.currentLine:
+                moveY = y + self.currentLineIndex//self.editorscr.getmaxyx()[1]
+                moveX = self.currentLineIndex % self.editorscr.getmaxyx()[1]
+
+            y += self.lineHeight(topLine)
             topLine += 1
             if y > self.linenumscr.getmaxyx()[0]-1:
                 break
             self.linenumscr.move(y,0)
 
-        topLine = self.topLine
-        # draw the lines themselves
-        self.editorscr.move(0,0)
-        for i in range(self.editorscr.getmaxyx()[0]):
-            try:
-                self.editorscr.addstr(self.fileLines[topLine+i])
-            except:
-                a = 1 # some garbage
 
+
+        # draw the lines themselves
+        topLine = self.topLine
+        self.editorscr.move(0,0)
+        i = 0
+        while True:
+            if self.editorscr.getyx()[0]+self.lineHeight(self.topLine+i) > self.editorscr.getmaxyx()[0]-1: # handle unprintable text (no space at bottom) when scrolling up
+                self.editorscr.addstr('@')
+                break
+            for c in self.fileLines[topLine+i]:
+                self.editorscr.addstr(c)
+                if self.editorscr.getyx()[1]+1 > self.editorscr.getmaxyx()[1]-1:
+                    self.editorscr.move(i+1,0)
+            if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0]-1:
+                break
+            self.editorscr.move(i+1,0)
+            i += 1
+
+        # move cursor to where it should be as specified by currentLine and currentLineIndex, refresh and move on
+        self.editorscr.move(moveY,moveX)
         self.linenumscr.refresh()
         self.editorscr.refresh()
-        self.editorscr.move(oldy,oldx)
         pass
 
+    def moveDown(self,y,x):
+        """
+        Moves down one line
+        """
+        if y+self.lineHeight(self.currentLine)-1 < self.editorscr.getmaxyx()[0]-2:
+            self.editorscr.move(y+self.currentLineHeight(),x)
+            self.currentLine += 1
+        elif len(self.fileLines)-self.currentLine > 0:
+            self.currentLine += 1
+            self.topLine += self.lineHeight(self.currentLine)
+
+    def moveUp(self,y,x):
+        if y > 0:
+            self.editorscr.move(y-self.lineHeight(self.currentLine-1),x)
+            self.currentLine -= 1
+        elif self.currentLine > 0:
+            self.currentLine -= 1
+            self.topLine -= 1
+
+    def moveLeft(self,y,x):
+        if x > 0:
+            self.editorscr.move(y,x-1)
+            self.currentLineIndex -= 1
+
+    def moveRight(self,y,x):
+        if x < self.editorscr.getmaxyx()[1]-1:
+            self.editorscr.move(y,x+1)
+            self.currentLineIndex += 1
+
     def run(self):
+        """
+        Main loop of the state machine
+        """
         while True:
             self.drawLines()
             (y,x) = self.editorscr.getyx() # get cursor position relative to top left
@@ -112,45 +174,43 @@ class Editor:
                 # movement
                 # remember top left is (0,0)
                 if c == 'j': # down
-                    if y < self.editorscr.getmaxyx()[0]-1:
-                        self.editorscr.move(y+self.currentLineHeight(),x)
-                        self.currentLine += 1
-                    elif len(self.fileLines)-self.currentLine > 0:
-                        self.currentLine += 1
-                        self.topLine += 1
+                    self.moveDown(y,x)
                 if c == 'k': # up
-                    if y > 0:
-                        self.editorscr.move(y-self.lineHeight(self.currentLine-1),x)
-                        self.currentLine -= 1
-                    elif self.currentLine > 0:
-                        self.currentLine -= 1
-                        self.topLine -= 1
+                    self.moveUp(y,x)
                 if c == 'h': # left
-                    if x > 0:
-                        self.editorscr.move(y,x-1)
+                    self.moveLeft(y,x)
                 if c == 'l': # right
-                    if x < self.editorscr.getmaxyx()[1]-1:
-                        self.editorscr.move(y,x+1)
+                    self.moveRight(y,x)
 
                 # jumping movement
                 if c == 'w': # jump to char before last space from left to right, after current char
                     x += 1
+                    lineInd = x
                     if self.fileLines[self.currentLine] == '\n':
                         self.currentLine += 1
                         self.editorscr.move(y+1,x-1)
                         continue
-                    while self.fileLines[self.currentLine][x] != ' ':
+
+                    while self.fileLines[self.currentLine][lineInd] != ' ':
                         x += 1
+                        self.currentLineIndex += 1
+                        if x >= self.editorscr.getmaxyx()[1]-1:
+                            y += 1
+                            x = 0
+                            lineInd += 1
                         if x >= len(self.fileLines[self.currentLine]):
                             x = 0
-                            self.currentLine += 1 # move down 1
                             y += 1
-                    while self.fileLines[self.currentLine][x] == ' ':
+                            lineInd = 0
+                            self.moveDown(y,x)
+                    while self.fileLines[self.currentLine][lineInd] == ' ':
                         x += 1
+                        lineInd += 1
                         if x >= len(self.fileLines[self.currentLine]):
                             x = 0
-                            self.currentLine += 1 # move down 1
                             y += 1
+                            lineInd = 0
+                            self.moveDown(y,x)
 
                     self.editorscr.move(y,x)
                     pass
