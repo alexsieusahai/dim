@@ -1,0 +1,6 @@
+Must do:
+When you're in insert mode edit the actual lines stored in memory
+Implement the common movement functions from vim
+
+Wishlist:
+Get a save file system going similar to swap

@@ -29,39 +29,32 @@ class Editor:
     def __init__(self):
         # handling curses
         self.stdscr = curses.initscr()
-        self.editorscr = curses.newwin(self.stdscr.getmaxyx()[0], self.stdscr.getmaxyx()[1]-4, 0, 4)
-        self.linenumscr = curses.newwin(self.stdscr.getmaxyx()[0], 4, 0, 0)
+        self.editorscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, self.stdscr.getmaxyx()[1]-4, 0, 4)
+        self.linenumscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, 4, 0, 0)
         curses.noecho()
         curses.cbreak()
         curses.start_color() # have to make exceptions for terminals that don't support color
         curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK) # use as default for now
 
-        
-        # grabbing all the lines initially, don't want to grab them all with file; only keep what you need in memory
+        # grabbing the lines from the file
         self.fileName = 'a.cpp'
-        self.lines = []
+        with open(self.fileName, 'r+') as f:
+            self.fileLines = f.readlines()
+            
+        # make and store the savefile here
+
         (maxY,maxX) = self.stdscr.getmaxyx()
-        maxLines = maxY
-        i = 0
-        while maxLines:
-            self.lines.append(linecache.getline(self.fileName, i))
-            lineLength = len(self.lines[-1])//maxX
-            if not lineLength: lineLength = 1 # meaning nothing on line
-            maxLines -= lineLength
-            i += 1
-        for line in self.lines:
+        for line in self.fileLines:
             try:
-                self.editorscr.addstr(line+'\n')
+                self.editorscr.addstr(line)
             except:
                 break
 
-        # set up the swap file
-            
 
         # setting ui up
         self.editorscr.move(0,0)
         self.currentLine = 0
-        self.drawLineNumbers(0)
+        self.drawLines()
         self.state = State.NORMAL
             
 
@@ -71,26 +64,45 @@ class Editor:
         curses.nocbreak()
         self.stdscr.keypad(False)
         curses.endwin()
-
+        self.saveFile.close() # close the savefile
 
     def currentLineHeight(self):
         return self.lineHeight(self.currentLine)
 
     def lineHeight(self, lineNumber):
-        return 1
+        manyLines = len(self.fileLines[lineNumber])//self.stdscr.getmaxyx()[1]+1
+        return manyLines if manyLines else 1
 
-    def drawLineNumbers(self,topLine):
+
+    def drawLines(self):
         (oldy,oldx) = self.editorscr.getyx()
+
+        # draw lines
+        topLine = self.currentLine-oldy
         y = 0
         self.linenumscr.move(0,0)
-        for line in self.lines:
+        for line in self.fileLines:
             self.linenumscr.addstr(str(topLine+1))
-            y += 1
-            topLine += 1
+            increm = self.lineHeight(topLine)
+            y += increm
+            topLine += 1 
             self.linenumscr.move(y,0)
-        self.linenumscr.refresh()
-        pass
+            if y > self.linenumscr.getmaxyx()[0]-2:
+                self.linenumscr.addstr(str(topLine+1))
+                break
         
+        self.editorscr.move(0,0)
+        for i in range(self.editorscr.getmaxyx()[0]):
+            try:
+                self.editorscr.addstr(self.fileLines[topLine+i])
+            except: 
+                a = 1
+
+        self.linenumscr.refresh()
+        self.editorscr.refresh()
+        self.editorscr.move(oldy,oldx)
+        pass
+
     def run(self):
         while True:
             (y,x) = self.editorscr.getyx() # get cursor position relative to top left
@@ -102,9 +114,14 @@ class Editor:
                 if c == 'j': # down
                     if y < self.editorscr.getmaxyx()[0]-1:
                         self.editorscr.move(y+self.currentLineHeight(),x)
+                        self.currentLine += 1
+                    elif len(self.fileLines)-self.currentLine > 0:
+                        self.currentLine += 1
+                        self.drawLines()
                 if c == 'k': # up
                     if y > 0:
                         self.editorscr.move(y-self.currentLineHeight(),x)
+                        self.currentLine -= 1
                 if c == 'h': # left 
                     if x > 0:
                         self.editorscr.move(y,x-1)
