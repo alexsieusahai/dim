@@ -10,3 +10,16 @@ Find a more efficient solution for `w` jumping, one right now is very costly, in
 Divide and conquer approach for finding where to `w` and `b` jump
 ***Refactor word jumping (`w` and `b`) for more clean code (so shit rn)
 ***It's bugged too; just gonna leave it and implement divide and conquer solution a little later
+
+******
+IMPORTANT
+******
+
+Stuff to mention during 275 presentation:
+    
+    Used a linked list to represent all of the lines
+	- makes insertion and deletion O(1) intead of O(n)
+	    - talk about python list slices creating a new list, worse for memory too
+
+    Talk about usage of abstraction to make implementing features and changing implementations of existing features relatively painless
+	- learned about importance throughout project, came to appreciate it when I had to change line storage from list to linked list to make inserting and deleting lines very fast

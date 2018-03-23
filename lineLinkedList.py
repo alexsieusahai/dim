@@ -1,6 +1,6 @@
 from lineNode import LineNode
 
-class lineLinkedList: # doubly linked list for storing lines
+class LineLinkedList: # doubly linked list for storing lines
     def __init__(self,lineList):
         self.length = 0
         self.start = None
@@ -20,7 +20,7 @@ class lineLinkedList: # doubly linked list for storing lines
         self.end = lastNode
 
 if __name__ == '__main__':
-    ll = lineLinkedList([x for x in 'dog'])
+    ll = LineLinkedList([x for x in 'dog'])
     walkNode = ll.start
     while walkNode.nextNode != None:
         print(walkNode.value+' '+str(walkNode.index))

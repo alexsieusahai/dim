@@ -47,10 +47,12 @@ class Editor:
         self.linenumscr.attrset(curses.color_pair(1))
 
         # grabbing the lines from the file
-        self.fileName = 'a.cpp'
+        #self.fileName = 'a.cpp'
+        self.fileName = 'index.html'
         with open(self.fileName, 'r+') as f:
             self.fileLines = f.readlines()
-        self.lineLinkedList = LineLinkedList(fileLines)
+        # making the linked list
+        self.lineLinkedList = LineLinkedList(self.fileLines)
 
         # make and store the savefile here
 
@@ -58,9 +60,15 @@ class Editor:
 
         # setting ui up
         self.editorscr.move(0,0)
-        self.currentLine = 0
+        # old implementation
+        #self.currentLine = 0
+        #self.currentLineIndex = 0
+        #self.topLine = 0
+
+        # keep 2 pointers; 1 for top line node, 1 for current line node
+        self.topLine = self.currentLine = self.lineLinkedList.start
         self.currentLineIndex = 0
-        self.topLine = 0
+
         self.drawLines()
         self.state = State.NORMAL
 
@@ -92,22 +100,26 @@ class Editor:
         """
         return self.lineHeight(self.currentLine)
 
-    def lineHeight(self, lineNumber):
+    def lineHeight(self, lineNode):
         """
-        Returns the height of line lineNumber
+        Returns the "height" (how many rows it takes up) of lineNode object passed in
         """
-        manyLines = len(self.fileLines[lineNumber])//self.stdscr.getmaxyx()[1]+1
+        # old implementation
+        #manyLines = len(self.fileLines[lineNumber])//self.editorscr.getmaxyx()[1]+1
+        #return manyLines if manyLines else 1
+        manyLines = len(lineNode.value)//self.editorscr.getmaxyx()[1]+1
         return manyLines if manyLines else 1
 
     def getCurrentChar(self):
-        return self.fileLines[self.currentLine][self.currentLineIndex]
+        return self.currentLine.value[self.currentLineIndex]
 
     def getNextChar(self):
         # note we are guaranteed to have this as we never get to newline char
-        return self.fileLines[self.currentLine][self.currentLineIndex+1]
+        return self.currentLine.value[self.currentLineIndex+1]
+
 
     def moveToEndOfLine(self):
-        self.currentLineIndex = len(self.fileLines[self.currentLine])-2
+        self.currentLineIndex = len(self.currentLine.value)-2
 
     def moveToBeginningOfLine(self):
         self.currentLineIndex = 0
@@ -124,48 +136,51 @@ class Editor:
 
         (moveY,moveX) = (0,0) # to move after
 
+
         # draw line numbers
         lineToDraw = self.topLine
         y = 0
         self.linenumscr.move(0,0)
         while y < self.linenumscr.getmaxyx()[0]-1:
-            self.linenumscr.addstr(str(lineToDraw+1))
+            self.linenumscr.addstr(str(lineToDraw.index+1))
 
             if lineToDraw == self.currentLine:
                 moveY = y + self.currentLineIndex//self.editorscr.getmaxyx()[1]
-                moveX = min(self.currentLineIndex % self.editorscr.getmaxyx()[1], len(self.fileLines[self.currentLine])-2) # avoid the newline char
+                moveX = min(self.currentLineIndex % self.editorscr.getmaxyx()[1], len(self.currentLine.value)-2) # avoid the newline char
                 if moveX <= -1: moveX = 0
 
             y += self.lineHeight(lineToDraw)
-            lineToDraw += 1
-            if lineToDraw == len(self.fileLines):
-                break
+            if lineToDraw.nextNode == None: # ran out of nodes
+                break 
+            lineToDraw = lineToDraw.nextNode
             if y > self.linenumscr.getmaxyx()[0]-1:
                 break
             self.linenumscr.move(y,0)
 
 
 
+
         # draw the lines themselves
         lineToDraw = self.topLine
         self.editorscr.move(0,0)
-        fileLineIndex = cursorY = 0
+        cursorY = 0
         while True:
-            if fileLineIndex == len(self.fileLines):
-                break
-            if self.editorscr.getyx()[0]+self.lineHeight(self.topLine+fileLineIndex) > self.editorscr.getmaxyx()[0]-1: # handle unprintable text (no space at bottom) when scrolling up
+            if self.editorscr.getyx()[0]+self.lineHeight(lineToDraw) > self.editorscr.getmaxyx()[0]-1: # handle unprintable text (no space at bottom) when scrolling up
                 self.editorscr.addstr('@')
                 break
-            for c in self.fileLines[lineToDraw+fileLineIndex]:
+            for c in lineToDraw.value:
                 self.editorscr.addstr(c)
-                if self.editorscr.getyx()[1]+1 > self.editorscr.getmaxyx()[1]-1:
+                if self.editorscr.getyx()[1]+1 > self.editorscr.getmaxyx()[1]-1: # we have reached the end of the line horizontally
                     cursorY += 1
                     self.editorscr.move(cursorY,0)
             if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0]-1:
                 break
             self.editorscr.move(cursorY+1,0)
             cursorY += 1
-            fileLineIndex += 1
+            if lineToDraw.nextNode == None:
+                break
+            lineToDraw = lineToDraw.nextNode
+
 
         # testing
         self.filenavscr.clear()
@@ -182,38 +197,50 @@ class Editor:
         """
         Moves down one line
         """
-        if self.currentLine + 1 == len(self.fileLines):
+        if self.currentLine.nextNode == None: # we don't have any more nodes
             return
         if y+self.lineHeight(self.currentLine) < self.editorscr.getmaxyx()[0]-2:
-            self.currentLine += 1
-            if self.currentLineIndex > len(self.fileLines[self.currentLine])-2:
-                self.currentLineIndex = len(self.fileLines[self.currentLine])-2
+            self.currentLine = self.currentLine.nextNode
+            if self.currentLineIndex > len(self.currentLine.value) - 2:
+                self.currentLineIndex = len(self.currentLine.value) - 2
+                self.drawLines()
             if self.currentLineIndex < 0:
                 self.currentLineIndex = 0
-        elif len(self.fileLines)-self.currentLine > 1:
-            self.currentLine += 1
-            self.topLine += self.lineHeight(self.currentLine)
+
+        elif self.lineLinkedList.length - self.currentLine.index > 1:
+            self.currentLine = self.currentLine.nextNode
+            amountToMoveDown = self.lineHeight(self.currentLine)
+            while amountToMoveDown > 0:
+                amountToMoveDown -= self.lineHeight(self.topLine)
+                self.topLine = self.topLine.nextNode
+
 
     def moveUp(self,y,x):
         if y > 0:
-            self.currentLine -= 1
-        elif self.currentLine > 0:
-            self.currentLine -= 1
-            self.topLine -= 1
+            self.currentLine = self.currentLine.lastNode
+            if self.currentLineIndex > len(self.currentLine.value) - 2:
+                self.currentLineIndex = len(self.currentLine.value) - 2
+                self.drawLines()
+        elif self.currentLine.lastNode != None:
+            self.currentLine = self.currentLine.lastNode
+            self.topLine = self.topLine.lastNode
 
     def moveLeft(self,y,x):
         if self.editorscr.getyx()[1] > 0:
-            if self.currentLineIndex > len(self.fileLines[self.currentLine])-2:
-                self.currentLineIndex = len(self.fileLines[self.currentLine])-2
+            if self.currentLineIndex > len(self.currentLine.value)-2:
+                self.currentLineIndex = len(self.currentLine.value)-2
+            if self.currentLineIndex > 0:
+                self.currentLineIndex -= 1
+        else:
             if self.currentLineIndex > 0:
                 self.currentLineIndex -= 1
 
     def moveRight(self,y,x):
-        if self.fileLines[self.currentLine] != '\n': # if it's only newline ignore
-            if self.currentLineIndex > len(self.fileLines[self.currentLine])-2:
-                self.currentLineIndex = len(self.fileLines[self.currentLine])-2
+        if self.currentLine.value != '\n': # if it's only newline ignore
+            if self.currentLineIndex > len(self.currentLine.value) - 2:
+                self.currentLineIndex = len(self.currentLine.value) - 2
 
-            if self.fileLines[self.currentLine][self.currentLineIndex+1] != '\n':
+            if self.currentLine.value[self.currentLineIndex+1] != '\n':
                 self.currentLineIndex += 1
 
 
@@ -247,10 +274,9 @@ class Editor:
                     """
                     Walk through elements on line until you hit either punctuation (where you stop) or spaces (where you walk through until you hit something that isn't a space)
                     """
-                    # inefficient but more elegant than walking through manually
                     
                     # handle edge case of `w` on '\n' line
-                    if self.fileLines[self.currentLine] == '\n':
+                    if self.currentLine.value == '\n':
                         self.moveDown(y,x)
                         self.currentLineIndex = 0
                         continue
@@ -261,7 +287,7 @@ class Editor:
                         self.drawLines()
 
                     while True:
-                        if self.fileLines[self.currentLine] == '\n':
+                        if self.currentLine.value == '\n':
                             break
 
                         self.moveRight(y,x)
@@ -294,16 +320,14 @@ class Editor:
                     self.moveLeft(y,x)
                     self.currentLineIndex -= 1
                     if self.currentLineIndex < 0:
-                        if self.currentLine == 0:
+                        if self.currentLine.lastNode == None:
                             self.currentLineIndex = 0
                             continue
-                        self.currentLine -= 1
-                        #self.moveUp(y,x)
+                        self.currentLine = self.currentLine.lastNode
                         self.moveToEndOfLine()
                         self.drawLines()
-                        self.currentLineIndex = 0
                     
-                    if len(self.fileLines[self.currentLine]) <= 2:
+                    if len(self.currentLine.value) <= 2:
                         continue
                     
                     # now we are guaranteed a line with at least two characters
