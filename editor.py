@@ -1,14 +1,18 @@
+####
+# Bug notes for insertLine
+# If I walk through all the lines normally and print out the value of each line, then I get the proper values
+# Idk about drawLines()
 
 # look into "wrapper" for debugging
 
 from enum import Enum
-import linecache
-import string
+import string # ascii, digits lists
+import os # file subsystem
 
-import curses
+import curses # drawing the editor
 
 from lineLinkedList import LineLinkedList
-
+from lineNode import LineNode
 
 class State(Enum):
     NORMAL = 0
@@ -26,17 +30,20 @@ class ColorSchemes(Enum):
     pass
 
 MAX_LINE_NUMBER_LENGTH = 4
-FILE_SUBSYSTEM_WINDOW_LENGTH = 18 
+FILE_SUBSYSTEM_WINDOW_LENGTH = 18
 
 class Editor:
 
     def __init__(self):
         # handling curses
+        # init screens
         self.stdscr = curses.initscr()
         self.editorscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, self.stdscr.getmaxyx()[1]-(MAX_LINE_NUMBER_LENGTH+1)-FILE_SUBSYSTEM_WINDOW_LENGTH, 0, MAX_LINE_NUMBER_LENGTH+1+FILE_SUBSYSTEM_WINDOW_LENGTH)
         self.linenumscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, MAX_LINE_NUMBER_LENGTH+1, 0, FILE_SUBSYSTEM_WINDOW_LENGTH)
         self.filenavscr = curses.newwin(self.stdscr.getmaxyx()[0], FILE_SUBSYSTEM_WINDOW_LENGTH, 0, 0)
-        self.filenavscr.refresh()
+        self.statusscr = curses.newwin(1,self.stdscr.getmaxyx()[1]-FILE_SUBSYSTEM_WINDOW_LENGTH, self.stdscr.getmaxyx()[0]-2, FILE_SUBSYSTEM_WINDOW_LENGTH)
+
+        # set up curses stuff and colors
         curses.noecho()
         curses.cbreak()
         curses.start_color() # have to make exceptions for terminals that don't support color
@@ -45,6 +52,8 @@ class Editor:
         curses.init_pair(1, 1, 0)
         self.stdscr.attrset(curses.color_pair(1))
         self.linenumscr.attrset(curses.color_pair(1))
+        self.statusscr.addstr('!!!!!')
+        self.statusscr.refresh()
 
         # grabbing the lines from the file
         self.fileName = 'a.cpp'
@@ -131,19 +140,49 @@ class Editor:
         to
         ... -> lineNode.lastNode -> lineNode.nextNode -> ...
         """
-        lineNode.lastNode.value = lineNode.lastNode.value[:-1]+lineNode.value[:-2]+'\n'
+
+        self.currentLineIndex = len(lineNode.lastNode.value)-1
+        lineNode.lastNode.value = lineNode.lastNode.value[:-1]+lineNode.value[:-1]+'\n'
         lineNode.lastNode.nextNode = lineNode.nextNode
+        # handle edge case
+        if lineNode.nextNode != None:
+            lineNode.nextNode.lastNode = lineNode.lastNode
         returnNode = lineNode.lastNode
         del lineNode
         self.lineLinkedList.length -= 1
         return returnNode
 
-    def insertLine(lineNode):
+    def insertLine(self,lineNode):
         """
-        It will be inserted like this:
-        lineNode -> newLine -> lineNode.next
+        Inserts a line just like how vim does
+        ... -> lineNode.lastNode -> lineNode -> lineNode.nextNode -> ...
+        ... -> lineNode.lastNode -> lineNode -> newNode -> lineNode.nextNode -> ...
         """
-        pass
+
+        newLineValue = self.currentLine.value[self.currentLineIndex:]
+        self.currentLine.value = self.currentLine.value[:self.currentLineIndex]+'\n'
+        newNode = LineNode(newLineValue,self.currentLine)
+
+        temp = lineNode.nextNode # save it for later
+        lineNode.nextNode = newNode
+        newNode.nextNode = temp
+        if temp != None:
+            temp.lastNode = newNode
+
+        self.lineLinkedList.length += 1
+
+        # testing
+
+        #self.kill()
+        #walk = self.lineLinkedList.start
+        #while walk.nextNode != None:
+        #    print(walk.value,end='')
+        #    walk = walk.nextNode
+        #assert(False)
+
+        self.drawLines()
+
+        return newNode
 
 
     def drawLines(self):
@@ -174,7 +213,7 @@ class Editor:
             y += self.lineHeight(lineToDraw)
 
             if lineToDraw.nextNode == None: # ran out of nodes
-                break 
+                break
             lineToDraw = lineToDraw.nextNode
             lineIndex += 1
 
@@ -189,17 +228,26 @@ class Editor:
         lineToDraw = self.topLine
         self.editorscr.move(0,0)
         cursorY = 0
-        #if self.lineLinkedList.length == 10:
+
+
+        #testing
+
+        #if self.lineLinkedList.length == 12:
         #    self.kill()
+        #    print('this is what drawLines sees')
+        #    print()
         #    while lineToDraw != None:
         #        print(lineToDraw.value,end='')
         #        lineToDraw = lineToDraw.nextNode
         #    assert(False)
 
-        while True:
+        while lineToDraw != None:
+
             if self.editorscr.getyx()[0]+self.lineHeight(lineToDraw) > self.editorscr.getmaxyx()[0]-1: # handle unprintable text (no space at bottom) when scrolling up
                 self.editorscr.addstr('@')
                 break
+            if lineToDraw.value == 'using namespace std;\n' and lineToDraw.lastNode.value == 'using\n':
+                assert(False)
             for c in lineToDraw.value:
                 self.editorscr.addstr(c)
                 if self.editorscr.getyx()[1]+1 > self.editorscr.getmaxyx()[1]-1: # we have reached the end of the line horizontally
@@ -209,9 +257,10 @@ class Editor:
                 break
             self.editorscr.move(cursorY+1,0)
             cursorY += 1
-            if lineToDraw.nextNode == None:
-                break
             lineToDraw = lineToDraw.nextNode
+
+
+
 
 
         # testing
@@ -239,7 +288,7 @@ class Editor:
             if self.currentLineIndex < 0:
                 self.currentLineIndex = 0
 
-        elif self.lineLinkedList.length - self.currentLine.index > 1:
+        elif self.currentLine.nextNode == self.lineLinkedList.end:
             self.currentLine = self.currentLine.nextNode
             amountToMoveDown = self.lineHeight(self.currentLine)
             while amountToMoveDown > 0:
@@ -252,9 +301,14 @@ class Editor:
             self.currentLine = self.currentLine.lastNode
             if self.currentLineIndex > len(self.currentLine.value) - 2:
                 self.currentLineIndex = len(self.currentLine.value) - 2
+                if self.currentLineIndex < 0:
+                    self.currentLineIndex = 0
                 self.drawLines()
         elif self.currentLine.lastNode != None:
             self.currentLine = self.currentLine.lastNode
+            #self.kill()
+            #print(self.currentLine.value)
+            assert(False)
             self.topLine = self.topLine.lastNode
 
     def moveLeft(self,y,x):
@@ -301,26 +355,18 @@ class Editor:
                 elif c == '0': # beginning
                     self.moveToBeginningOfLine()
 
-                # jumping movement
-                elif c == 'w': 
+                elif c == 'w':
                     """
                     Walk through elements on line until you hit either punctuation (where you stop) or spaces (where you walk through until you hit something that isn't a space)
                     """
-                    
+
                     # handle edge case of `w` on '\n' line
-                    if self.currentLine.value == '\n':
+                    if self.currentLine.value == '\n' or self.getNextChar() == '\n':
                         self.moveDown(y,x)
                         self.currentLineIndex = 0
                         continue
 
-                    if self.getNextChar() == '\n':
-                        self.moveDown(y,0)
-                        self.currentLineIndex = 0
-                        self.drawLines()
-
                     while True:
-                        if self.currentLine.value == '\n':
-                            break
 
                         self.moveRight(y,x)
                         self.drawLines()
@@ -330,20 +376,42 @@ class Editor:
                             break
 
                         if self.getNextChar() == '\n':
+                            break
                             self.moveDown(y,0)
                             self.currentLineIndex = 0
                             self.drawLines()
                             c = self.getCurrentChar()
+                            break
 
                         if c == ' ':
                             while c == ' ':
                                 self.moveRight(y,x)
                                 self.drawLines()
                                 c = self.getCurrentChar()
-
+                                if self.getNextChar() == '\n':
+                                    break
                             break
 
-                elif c == 'b': 
+                elif c == 'e':
+                    # handle edge case of `e` on '\n' line
+                    if self.currentLine.value == '\n' or self.getNextChar() == '\n':
+                        self.moveDown(y,x)
+                        self.currentLineIndex = 0
+                        continue
+
+                    self.moveRight(y,x)
+
+                    while True:
+                        while self.getNextChar() == ' ':
+                            self.moveRight(y,x)
+                        while self.getNextChar() in string.ascii_letters:
+                            self.moveRight(y,x)
+                        self.drawLines()
+
+                        break
+
+
+                elif c == 'b':
                     """
                     Walk through elements on the line _backwards_ until the character before is punctuation or a space
                     """
@@ -355,16 +423,18 @@ class Editor:
                         if self.currentLine.lastNode == None:
                             self.currentLineIndex = 0
                             continue
-                        self.currentLine = self.currentLine.lastNode
+                        #self.currentLine = self.currentLine.lastNode
+                        self.moveUp(y,x)
                         self.moveToEndOfLine()
                         self.drawLines()
-                    
+                        self.currentLineIndex = 0
+
                     if len(self.currentLine.value) <= 2:
                         continue
-                    
+
                     # now we are guaranteed a line with at least two characters
                     c = self.getCurrentChar()
-                    
+
                     while c == ' ':
                         self.moveLeft(y,x)
                         self.drawLines()
@@ -373,7 +443,7 @@ class Editor:
                             moveForward = False
                             break
                         if self.editorscr.getyx()[1] == 0:
-                            if self.currentLine == 0: 
+                            if self.currentLine == 0:
                                 moveForward = False
                                 break
                             self.moveUp(y,x)
@@ -394,7 +464,7 @@ class Editor:
                         if self.currentLineIndex < 0:
                             self.currentLineIndex = 0
                             break
-                    
+
                     if moveForward:
                         self.moveRight(y,x)
                         self.drawLines()
@@ -411,12 +481,6 @@ class Editor:
             if self.state == State.INSERT:
 
                 c = chr(self.editorscr.getch())
-                s = self.currentLine.value
-                if s[-1] != ' ':
-                    s += ' '
-                self.currentLine.value = s
-                self.moveRight(y,x)
-                self.drawLines()
 
                 #self.kill()
                 #print(ord(c))
@@ -424,30 +488,25 @@ class Editor:
 
                 if ord(c) == 27: # escape
                     self.state = State.NORMAL
-                    if self.currentLine.value[-1] == ' ':
-                        self.currentLine.value = self.currentLine.value[-1]
                 elif ord(c) == 127: # backspace
-                    s = s[:self.currentLineIndex-2]+s[self.currentLineIndex-1:]
+                    self.currentLine.value = self.currentLine.value[:max(self.currentLineIndex-1,0)]+self.currentLine.value[max(self.currentLineIndex,0):]
                     self.currentLineIndex -= 1
                     if self.currentLineIndex == -1:
                         # delete the line
                         self.currentLine = self.deleteLine(self.currentLine)
                         s = self.currentLine.value
-                        #self.kill()
-                        #print(self.currentLine.value)
-                        #assert(False)
-                        self.moveToEndOfLine()
                         self.drawLines()
 
                 elif ord(c) == 10: # enter
-                    pass
+                    self.currentLine = self.insertLine(self.currentLine)
+                    self.moveToBeginningOfLine()
+                    self.drawLines()
 
                 else: # any other character
-                    s = s[:x] + c + s[x:]
+                    self.currentLine.value = self.currentLine.value[:self.currentLineIndex] + c + self.currentLine.value[self.currentLineIndex:]
                     self.currentLineIndex += 1
                     self.drawLines()
 
-                self.currentLine.value = s
 
             if self.state == State.VISUAL:
                 self.state = State.NORMAL

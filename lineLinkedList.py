@@ -7,7 +7,7 @@ class LineLinkedList: # doubly linked list for storing lines
         self.end = None
         lastNode = None
         for line in lineList:
-            node = LineNode(self.length,line,lastNode)
+            node = LineNode(line,lastNode)
 
             if self.start == None:
                 self.start = node
@@ -23,6 +23,6 @@ if __name__ == '__main__':
     ll = LineLinkedList([x for x in 'dog'])
     walkNode = ll.start
     while walkNode.nextNode != None:
-        print(walkNode.value+' '+str(walkNode.index))
+        print(walkNode.value)
         walkNode = walkNode.nextNode
-    print(walkNode.value+' '+str(walkNode.index))
+    print(walkNode.value)

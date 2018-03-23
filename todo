@@ -1,7 +1,8 @@
 Must do:
 
-Implement enter and deal with backspace at beginning of line (line creation and deletion)
 Implement status bar
+Implement saving
+Implement `a` and `A` insertion
 Implement `x` deletion
 Implement `d` deletion
 Add functionality to do an operation multiple times (like `75gg` or `3w`)
@@ -12,6 +13,12 @@ Implement file navigator
 
 Wishlist:
 Get a save file system going similar to swap
+    - Compress it using huffman compression if space is available
+Syntax highlighting
+    - Regex
+Spellcheck
+    - Factor oracle, suffix trie
+
 Find a more efficient solution for `w` jumping, one right now is very costly, in this scenario efficiency > elegance
 ***Refactor word jumping (`w` and `b`) for more clean code (decent but could be better)
 
