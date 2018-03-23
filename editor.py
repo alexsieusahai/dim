@@ -3,6 +3,7 @@
 
 from enum import Enum
 import linecache
+import string
 
 import curses
 
@@ -23,21 +24,27 @@ class ColorSchemes(Enum):
     pass
 
 MAX_LINE_NUMBER_LENGTH = 4
+FILE_SUBSYSTEM_WINDOW_LENGTH = 18 
 
 class Editor:
 
     def __init__(self):
         # handling curses
         self.stdscr = curses.initscr()
-        self.editorscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, self.stdscr.getmaxyx()[1]-(MAX_LINE_NUMBER_LENGTH+1), 0, MAX_LINE_NUMBER_LENGTH+1)
-        self.linenumscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, MAX_LINE_NUMBER_LENGTH+1, 0, 0)
+        self.editorscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, self.stdscr.getmaxyx()[1]-(MAX_LINE_NUMBER_LENGTH+1)-FILE_SUBSYSTEM_WINDOW_LENGTH, 0, MAX_LINE_NUMBER_LENGTH+1+FILE_SUBSYSTEM_WINDOW_LENGTH)
+        self.linenumscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, MAX_LINE_NUMBER_LENGTH+1, 0, FILE_SUBSYSTEM_WINDOW_LENGTH)
+        self.filenavscr = curses.newwin(self.stdscr.getmaxyx()[0], FILE_SUBSYSTEM_WINDOW_LENGTH, 0, 0)
+        self.filenavscr.refresh()
         curses.noecho()
         curses.cbreak()
         curses.start_color() # have to make exceptions for terminals that don't support color
-        curses.init_pair(1, curses.COLOR_WHITE, curses.COLOR_BLACK) # use as default for now
-
+        curses.init_color(0, 125, 100, 90)
+        curses.init_color(1, 1000, 1000, 1000)
+        curses.init_pair(1, 1, 0)
+        self.stdscr.attrset(curses.color_pair(1))
+        self.linenumscr.attrset(curses.color_pair(1))
         # grabbing the lines from the file
-        self.fileName = 'index.html'
+        self.fileName = 'a.cpp'
         with open(self.fileName, 'r+') as f:
             self.fileLines = f.readlines()
 
@@ -53,6 +60,11 @@ class Editor:
         self.drawLines()
         self.state = State.NORMAL
 
+        # set up punctuation dictionary for fast checking of punctuation
+        self.punctuationChars = {}
+        for c in string.punctuation:
+            self.punctuationChars[c] = True
+
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
@@ -64,6 +76,12 @@ class Editor:
         curses.endwin()
         self.saveFile.close() # close the savefile
 
+    def kill(self):
+        curses.echo()
+        curses.nocbreak()
+        self.stdscr.keypad(False)
+        curses.endwin()
+
     def currentLineHeight(self):
         """
         Returns the height of the current line
@@ -74,8 +92,21 @@ class Editor:
         """
         Returns the height of line lineNumber
         """
-        manyLines = len(self.fileLines[lineNumber])//(self.stdscr.getmaxyx()[1]-self.currentLineIndex)+1
+        manyLines = len(self.fileLines[lineNumber])//self.stdscr.getmaxyx()[1]+1
         return manyLines if manyLines else 1
+
+    def getCurrentChar(self):
+        return self.fileLines[self.currentLine][self.currentLineIndex]
+
+    def getNextChar(self):
+        # note we are guaranteed to have this as we never get to newline char
+        return self.fileLines[self.currentLine][self.currentLineIndex+1]
+
+    def moveToEndOfLine(self):
+        self.currentLineIndex = len(self.fileLines[self.currentLine])-2
+
+    def moveToBeginningOfLine(self):
+        self.currentLineIndex = 0
 
 
     def drawLines(self):
@@ -83,7 +114,6 @@ class Editor:
         Draws the line numbers and the lines themselves onto the ui
         O(n) where n is the number of blocks that can fit onto the terminal, but since n is very small and theta(n) is a fraction of n usually < n/2 this is fine.
         """
-
         # clear the old data off of the screen
         self.linenumscr.clear()
         self.editorscr.clear()
@@ -91,18 +121,21 @@ class Editor:
         (moveY,moveX) = (0,0) # to move after
 
         # draw line numbers
-        topLine = self.topLine
+        lineToDraw = self.topLine
         y = 0
         self.linenumscr.move(0,0)
         while y < self.linenumscr.getmaxyx()[0]-1:
-            self.linenumscr.addstr(str(topLine+1))
+            self.linenumscr.addstr(str(lineToDraw+1))
 
-            if topLine == self.currentLine:
+            if lineToDraw == self.currentLine:
                 moveY = y + self.currentLineIndex//self.editorscr.getmaxyx()[1]
-                moveX = self.currentLineIndex % self.editorscr.getmaxyx()[1]
+                moveX = min(self.currentLineIndex % self.editorscr.getmaxyx()[1], len(self.fileLines[self.currentLine])-2) # avoid the newline char
+                if moveX <= -1: moveX = 0
 
-            y += self.lineHeight(topLine)
-            topLine += 1
+            y += self.lineHeight(lineToDraw)
+            lineToDraw += 1
+            if lineToDraw == len(self.fileLines):
+                break
             if y > self.linenumscr.getmaxyx()[0]-1:
                 break
             self.linenumscr.move(y,0)
@@ -110,56 +143,75 @@ class Editor:
 
 
         # draw the lines themselves
-        topLine = self.topLine
+        lineToDraw = self.topLine
         self.editorscr.move(0,0)
-        i = 0
+        fileLineIndex = cursorY = 0
         while True:
-            if self.editorscr.getyx()[0]+self.lineHeight(self.topLine+i) > self.editorscr.getmaxyx()[0]-1: # handle unprintable text (no space at bottom) when scrolling up
+            if fileLineIndex == len(self.fileLines):
+                break
+            if self.editorscr.getyx()[0]+self.lineHeight(self.topLine+fileLineIndex) > self.editorscr.getmaxyx()[0]-1: # handle unprintable text (no space at bottom) when scrolling up
                 self.editorscr.addstr('@')
                 break
-            for c in self.fileLines[topLine+i]:
+            for c in self.fileLines[lineToDraw+fileLineIndex]:
                 self.editorscr.addstr(c)
                 if self.editorscr.getyx()[1]+1 > self.editorscr.getmaxyx()[1]-1:
-                    self.editorscr.move(i+1,0)
+                    cursorY += 1
+                    self.editorscr.move(cursorY,0)
             if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0]-1:
                 break
-            self.editorscr.move(i+1,0)
-            i += 1
+            self.editorscr.move(cursorY+1,0)
+            cursorY += 1
+            fileLineIndex += 1
+
+        # testing
+        self.filenavscr.clear()
+        self.filenavscr.addstr(str((self.currentLineIndex,self.getCurrentChar())))
+        self.filenavscr.refresh()
 
         # move cursor to where it should be as specified by currentLine and currentLineIndex, refresh and move on
         self.editorscr.move(moveY,moveX)
         self.linenumscr.refresh()
         self.editorscr.refresh()
-        pass
+
 
     def moveDown(self,y,x):
         """
         Moves down one line
         """
-        if y+self.lineHeight(self.currentLine)-1 < self.editorscr.getmaxyx()[0]-2:
-            self.editorscr.move(y+self.currentLineHeight(),x)
+        if self.currentLine + 1 == len(self.fileLines):
+            return
+        if y+self.lineHeight(self.currentLine) < self.editorscr.getmaxyx()[0]-2:
             self.currentLine += 1
-        elif len(self.fileLines)-self.currentLine > 0:
+            if self.currentLineIndex > len(self.fileLines[self.currentLine])-2:
+                self.currentLineIndex = len(self.fileLines[self.currentLine])-2
+            if self.currentLineIndex < 0:
+                self.currentLineIndex = 0
+        elif len(self.fileLines)-self.currentLine > 1:
             self.currentLine += 1
             self.topLine += self.lineHeight(self.currentLine)
 
     def moveUp(self,y,x):
         if y > 0:
-            self.editorscr.move(y-self.lineHeight(self.currentLine-1),x)
             self.currentLine -= 1
         elif self.currentLine > 0:
             self.currentLine -= 1
             self.topLine -= 1
 
     def moveLeft(self,y,x):
-        if x > 0:
-            self.editorscr.move(y,x-1)
-            self.currentLineIndex -= 1
+        if self.editorscr.getyx()[1] > 0:
+            if self.currentLineIndex > len(self.fileLines[self.currentLine])-2:
+                self.currentLineIndex = len(self.fileLines[self.currentLine])-2
+            if self.currentLineIndex > 0:
+                self.currentLineIndex -= 1
 
     def moveRight(self,y,x):
-        if x < self.editorscr.getmaxyx()[1]-1:
-            self.editorscr.move(y,x+1)
-            self.currentLineIndex += 1
+        if self.fileLines[self.currentLine] != '\n': # if it's only newline ignore
+            if self.currentLineIndex > len(self.fileLines[self.currentLine])-2:
+                self.currentLineIndex = len(self.fileLines[self.currentLine])-2
+
+            if self.fileLines[self.currentLine][self.currentLineIndex+1] != '\n':
+                self.currentLineIndex += 1
+
 
     def run(self):
         """
@@ -175,66 +227,157 @@ class Editor:
                 # remember top left is (0,0)
                 if c == 'j': # down
                     self.moveDown(y,x)
-                if c == 'k': # up
+                elif c == 'k': # up
                     self.moveUp(y,x)
-                if c == 'h': # left
+                elif c == 'h': # left
                     self.moveLeft(y,x)
-                if c == 'l': # right
+                elif c == 'l': # right
                     self.moveRight(y,x)
+                elif c == '$': # eol
+                    self.moveToEndOfLine()
+                elif c == '0': # beginning
+                    self.moveToBeginningOfLine()
 
                 # jumping movement
-                if c == 'w': # jump to char before last space from left to right, after current char
-                    x += 1
-                    lineInd = x
+                elif c == 'w': 
+                    """
+                    Walk through elements on line until you hit either punctuation (where you stop) or spaces (where you walk through until you hit something that isn't a space)
+                    """
+                    # inefficient but more elegant than walking through manually
+                    
+                    # handle edge case of `w` on '\n' line
                     if self.fileLines[self.currentLine] == '\n':
-                        self.currentLine += 1
-                        self.editorscr.move(y+1,x-1)
+                        self.moveDown(y,x)
+                        self.currentLineIndex = 0
                         continue
 
-                    while self.fileLines[self.currentLine][lineInd] != ' ':
-                        x += 1
-                        self.currentLineIndex += 1
-                        if x >= self.editorscr.getmaxyx()[1]-1:
-                            y += 1
-                            x = 0
-                            lineInd += 1
-                        if x >= len(self.fileLines[self.currentLine]):
-                            x = 0
-                            y += 1
-                            lineInd = 0
-                            self.moveDown(y,x)
-                    while self.fileLines[self.currentLine][lineInd] == ' ':
-                        x += 1
-                        lineInd += 1
-                        if x >= len(self.fileLines[self.currentLine]):
-                            x = 0
-                            y += 1
-                            lineInd = 0
-                            self.moveDown(y,x)
+                    if self.getNextChar() == '\n':
+                        self.moveDown(y,0)
+                        self.currentLineIndex = 0
+                        self.drawLines()
 
-                    self.editorscr.move(y,x)
-                    pass
-                if c == 'b': # jump to char before last space from right to left, after current char
-                    pass
+                    while True:
+                        if self.fileLines[self.currentLine] == '\n':
+                            break
+
+                        self.moveRight(y,x)
+                        self.drawLines()
+                        c = self.getCurrentChar()
+
+                        if c in self.punctuationChars:
+                            break
+
+                        if self.getNextChar() == '\n':
+                            self.moveDown(y,0)
+                            self.currentLineIndex = 0
+                            self.drawLines()
+                            c = self.getCurrentChar()
+
+                        if c == ' ':
+                            while c == ' ':
+                                self.moveRight(y,x)
+                                self.drawLines()
+                                c = self.getCurrentChar()
+
+                            break
+
+                elif c == 'b': 
+                    """
+                    Walk through elements on the line _backwards_ until the character before is punctuation or a space
+                    """
+
+                    moveForward = True
+                    self.moveLeft(y,x)
+                    self.currentLineIndex -= 1
+                    if self.currentLineIndex < 0:
+                        if self.currentLine == 0:
+                            self.currentLineIndex = 0
+                            continue
+                        self.currentLine -= 1
+                        #self.moveUp(y,x)
+                        self.moveToEndOfLine()
+                        self.drawLines()
+                        self.currentLineIndex = 0
+                    
+                    if len(self.fileLines[self.currentLine]) <= 2:
+                        continue
+                    
+                    # now we are guaranteed a line with at least two characters
+                    c = self.getCurrentChar()
+                    
+                    while c == ' ':
+                        self.moveLeft(y,x)
+                        self.drawLines()
+                        c = self.getCurrentChar()
+                        if c in self.punctuationChars:
+                            moveForward = False
+                            break
+                        if self.editorscr.getyx()[1] == 0:
+                            if self.currentLine == 0: 
+                                moveForward = False
+                                break
+                            self.moveUp(y,x)
+                            self.drawLines()
+                            self.moveToEndOfLine()
+                            self.drawLines()
+
+                    while c in string.ascii_letters or c in string.digits:
+                        self.moveLeft(y,x)
+                        self.drawLines()
+                        c = self.getCurrentChar()
+                        if c in self.punctuationChars:
+                            moveForward = False
+                            break
+                        if self.currentLineIndex == 0:
+                            moveForward = False
+                            break
+                        if self.currentLineIndex < 0:
+                            self.currentLineIndex = 0
+                            break
+                    
+                    if moveForward:
+                        self.moveRight(y,x)
+                        self.drawLines()
 
                 # move to different states
-                if c == 'i':
+                elif c == 'i':
                     self.state = State.INSERT
-                if c == 'v':
+                elif c == 'v':
                     self.state = State.VISUAL
-                if c == ':':
+                elif c == ':':
+                    pass
                     self.state = State.COMMAND_LINE
 
             if self.state == State.INSERT:
                 c = chr(self.editorscr.getch())
+                s = self.fileLines[self.currentLine]
+                if s[-1] != ' ':
+                    s += ' '
+                self.fileLines[self.currentLine] = s
+                self.moveRight(y,x)
+                self.drawLines()
 
-                if ord(c) == 27:
+                #self.kill()
+                #print(ord(c))
+                #assert(False)
+
+                if ord(c) == 27: # escape
                     self.state = State.NORMAL
-                else:
-                    s = self.fileLines[self.currentLine]
+                    if self.fileLines[self.currentLine][-1] == ' ':
+                        self.fileLines[self.currentLine] = self.fileLines[self.currentLine][-1]
+                elif ord(c) == 127: # backspace
+                    s = s[:self.currentLineIndex-2]+s[self.currentLineIndex-1:]
+                    self.currentLineIndex -= 1
+
+                elif ord(c) == 10: # enter
+                    pass
+
+                else: # any other character
                     s = s[:x] + c + s[x:]
-                    self.fileLines[self.currentLine] = s
-                    self.editorscr.move(y,x+1)
+                    self.currentLineIndex += 1
+                    self.drawLines()
+
+                self.fileLines[self.currentLine] = s
 
             if self.state == State.VISUAL:
                 self.state = State.NORMAL
