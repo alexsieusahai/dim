@@ -47,8 +47,8 @@ class Editor:
         self.linenumscr.attrset(curses.color_pair(1))
 
         # grabbing the lines from the file
-        #self.fileName = 'a.cpp'
-        self.fileName = 'index.html'
+        self.fileName = 'a.cpp'
+        #self.fileName = 'index.html'
         with open(self.fileName, 'r+') as f:
             self.fileLines = f.readlines()
         # making the linked list
@@ -86,7 +86,7 @@ class Editor:
         curses.nocbreak()
         self.stdscr.keypad(False)
         curses.endwin()
-        self.saveFile.close() # close the savefile
+        #self.saveFile.close() # close the savefile
 
     def kill(self):
         curses.echo()
@@ -124,6 +124,27 @@ class Editor:
     def moveToBeginningOfLine(self):
         self.currentLineIndex = 0
 
+    def deleteLine(self,lineNode):
+        """
+        Deletion looks like this:
+        ... -> lineNode.lastNode -> lineNode -> lineNode.nextNode -> ...
+        to
+        ... -> lineNode.lastNode -> lineNode.nextNode -> ...
+        """
+        lineNode.lastNode.value = lineNode.lastNode.value[:-1]+lineNode.value[:-2]+'\n'
+        lineNode.lastNode.nextNode = lineNode.nextNode
+        returnNode = lineNode.lastNode
+        del lineNode
+        self.lineLinkedList.length -= 1
+        return returnNode
+
+    def insertLine(lineNode):
+        """
+        It will be inserted like this:
+        lineNode -> newLine -> lineNode.next
+        """
+        pass
+
 
     def drawLines(self):
         """
@@ -140,9 +161,10 @@ class Editor:
         # draw line numbers
         lineToDraw = self.topLine
         y = 0
+        lineIndex = 1
         self.linenumscr.move(0,0)
         while y < self.linenumscr.getmaxyx()[0]-1:
-            self.linenumscr.addstr(str(lineToDraw.index+1))
+            self.linenumscr.addstr(str(lineIndex))
 
             if lineToDraw == self.currentLine:
                 moveY = y + self.currentLineIndex//self.editorscr.getmaxyx()[1]
@@ -150,9 +172,12 @@ class Editor:
                 if moveX <= -1: moveX = 0
 
             y += self.lineHeight(lineToDraw)
+
             if lineToDraw.nextNode == None: # ran out of nodes
                 break 
             lineToDraw = lineToDraw.nextNode
+            lineIndex += 1
+
             if y > self.linenumscr.getmaxyx()[0]-1:
                 break
             self.linenumscr.move(y,0)
@@ -164,6 +189,13 @@ class Editor:
         lineToDraw = self.topLine
         self.editorscr.move(0,0)
         cursorY = 0
+        #if self.lineLinkedList.length == 10:
+        #    self.kill()
+        #    while lineToDraw != None:
+        #        print(lineToDraw.value,end='')
+        #        lineToDraw = lineToDraw.nextNode
+        #    assert(False)
+
         while True:
             if self.editorscr.getyx()[0]+self.lineHeight(lineToDraw) > self.editorscr.getmaxyx()[0]-1: # handle unprintable text (no space at bottom) when scrolling up
                 self.editorscr.addstr('@')
@@ -183,9 +215,9 @@ class Editor:
 
 
         # testing
-        self.filenavscr.clear()
-        self.filenavscr.addstr(str((self.currentLineIndex,self.getCurrentChar())))
-        self.filenavscr.refresh()
+        #self.filenavscr.clear()
+        #self.filenavscr.addstr(str((self.currentLineIndex,self.getCurrentChar())))
+        #self.filenavscr.refresh()
 
         # move cursor to where it should be as specified by currentLine and currentLineIndex, refresh and move on
         self.editorscr.move(moveY,moveX)
@@ -377,11 +409,12 @@ class Editor:
                     self.state = State.COMMAND_LINE
 
             if self.state == State.INSERT:
+
                 c = chr(self.editorscr.getch())
-                s = self.fileLines[self.currentLine]
+                s = self.currentLine.value
                 if s[-1] != ' ':
                     s += ' '
-                self.fileLines[self.currentLine] = s
+                self.currentLine.value = s
                 self.moveRight(y,x)
                 self.drawLines()
 
@@ -391,11 +424,20 @@ class Editor:
 
                 if ord(c) == 27: # escape
                     self.state = State.NORMAL
-                    if self.fileLines[self.currentLine][-1] == ' ':
-                        self.fileLines[self.currentLine] = self.fileLines[self.currentLine][-1]
+                    if self.currentLine.value[-1] == ' ':
+                        self.currentLine.value = self.currentLine.value[-1]
                 elif ord(c) == 127: # backspace
                     s = s[:self.currentLineIndex-2]+s[self.currentLineIndex-1:]
                     self.currentLineIndex -= 1
+                    if self.currentLineIndex == -1:
+                        # delete the line
+                        self.currentLine = self.deleteLine(self.currentLine)
+                        s = self.currentLine.value
+                        #self.kill()
+                        #print(self.currentLine.value)
+                        #assert(False)
+                        self.moveToEndOfLine()
+                        self.drawLines()
 
                 elif ord(c) == 10: # enter
                     pass
@@ -405,7 +447,7 @@ class Editor:
                     self.currentLineIndex += 1
                     self.drawLines()
 
-                self.fileLines[self.currentLine] = s
+                self.currentLine.value = s
 
             if self.state == State.VISUAL:
                 self.state = State.NORMAL

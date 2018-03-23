@@ -1,15 +1,19 @@
 Must do:
 
-Switch list representation to linked list
+Implement enter and deal with backspace at beginning of line (line creation and deletion)
+Implement status bar
 Implement `x` deletion
+Implement `d` deletion
+Add functionality to do an operation multiple times (like `75gg` or `3w`)
+Implement `g` functionality (whatever it is)
+Implement `VISUAL` mode
+Implement file navigator
 
 
 Wishlist:
 Get a save file system going similar to swap
 Find a more efficient solution for `w` jumping, one right now is very costly, in this scenario efficiency > elegance
-Divide and conquer approach for finding where to `w` and `b` jump
-***Refactor word jumping (`w` and `b`) for more clean code (so shit rn)
-***It's bugged too; just gonna leave it and implement divide and conquer solution a little later
+***Refactor word jumping (`w` and `b`) for more clean code (decent but could be better)
 
 ******
 IMPORTANT
