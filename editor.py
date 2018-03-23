@@ -7,6 +7,8 @@ import string
 
 import curses
 
+from lineLinkedList import LineLinkedList
+
 
 class State(Enum):
     NORMAL = 0
@@ -43,10 +45,12 @@ class Editor:
         curses.init_pair(1, 1, 0)
         self.stdscr.attrset(curses.color_pair(1))
         self.linenumscr.attrset(curses.color_pair(1))
+
         # grabbing the lines from the file
         self.fileName = 'a.cpp'
         with open(self.fileName, 'r+') as f:
             self.fileLines = f.readlines()
+        self.lineLinkedList = LineLinkedList(fileLines)
 
         # make and store the savefile here
 
