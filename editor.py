@@ -47,17 +47,24 @@ class Editor:
         curses.noecho()
         curses.cbreak()
         curses.start_color() # have to make exceptions for terminals that don't support color
-        curses.init_color(0, 125, 100, 90)
-        curses.init_color(1, 1000, 1000, 1000)
+        curses.init_color(0, 125, 100, 90) # cool grey
+        curses.init_color(5, 400, 400, 400) # medium grey
+        curses.init_color(1, 1000, 1000, 1000) # white
         curses.init_pair(1, 1, 0)
         self.stdscr.attrset(curses.color_pair(1))
-        self.linenumscr.attrset(curses.color_pair(1))
-        self.statusscr.addstr('!!!!!')
-        self.statusscr.refresh()
+        curses.init_pair(3, 5, 0) # lighter grey text, cool grey background
+        self.linenumscr.attrset(curses.color_pair(3))
+
+        # set up something bright for statusscr
+        curses.init_color(2, 0, 0, 0) # black
+        curses.init_pair(2, 0, 1)
+        self.statusscr.bkgd(' ', curses.color_pair(2))
+        self.statusscr.attrset(curses.color_pair(2))
+        self.statusscr.refresh() # apply color
 
         # grabbing the lines from the file
-        self.fileName = 'a.cpp'
-        #self.fileName = 'index.html'
+        #self.fileName = 'a.cpp'
+        self.fileName = 'index.html'
         with open(self.fileName, 'r+') as f:
             self.fileLines = f.readlines()
         # making the linked list
@@ -69,13 +76,11 @@ class Editor:
 
         # setting ui up
         self.editorscr.move(0,0)
-        # old implementation
-        #self.currentLine = 0
-        #self.currentLineIndex = 0
-        #self.topLine = 0
+        self.currentLineCount = 0
 
         # keep 2 pointers; 1 for top line node, 1 for current line node
         self.topLine = self.currentLine = self.lineLinkedList.start
+        self.topLineCount = 1 # number to draw for topLine
         self.currentLineIndex = 0
 
         self.drawLines()
@@ -184,6 +189,15 @@ class Editor:
 
         return newNode
 
+    def saveFile(self):
+        """
+        Saves all lines in lineLinkedList to the file with the name self.fileName in cwd
+        """
+        f = open(self.fileName, 'w')
+        walk = self.lineLinkedList.start
+        while walk != None:
+            f.write(walk.value)
+            walk = walk.nextNode
 
     def drawLines(self):
         """
@@ -200,7 +214,7 @@ class Editor:
         # draw line numbers
         lineToDraw = self.topLine
         y = 0
-        lineIndex = 1
+        lineIndex = self.topLineCount
         self.linenumscr.move(0,0)
         while y < self.linenumscr.getmaxyx()[0]-1:
             self.linenumscr.addstr(str(lineIndex))
@@ -208,6 +222,7 @@ class Editor:
             if lineToDraw == self.currentLine:
                 moveY = y + self.currentLineIndex//self.editorscr.getmaxyx()[1]
                 moveX = min(self.currentLineIndex % self.editorscr.getmaxyx()[1], len(self.currentLine.value)-2) # avoid the newline char
+                self.currentLineCount = lineIndex
                 if moveX <= -1: moveX = 0
 
             y += self.lineHeight(lineToDraw)
@@ -259,10 +274,6 @@ class Editor:
             cursorY += 1
             lineToDraw = lineToDraw.nextNode
 
-
-
-
-
         # testing
         #self.filenavscr.clear()
         #self.filenavscr.addstr(str((self.currentLineIndex,self.getCurrentChar())))
@@ -272,6 +283,27 @@ class Editor:
         self.editorscr.move(moveY,moveX)
         self.linenumscr.refresh()
         self.editorscr.refresh()
+
+    def drawStatus(self):
+        self.statusscr.clear()
+        checkStr = (self.getStateStr()+'\t'+os.getcwd()+'/'+self.fileName+'  '+
+            'Line '+str(self.currentLineCount)+' Column '+str(self.currentLineIndex))
+        if len(checkStr) > self.statusscr.getmaxyx()[1]:
+            checkStr = checkStr[:self.statusscr.getmaxyx()[1]-2]
+        self.statusscr.addstr(checkStr)
+        self.statusscr.refresh()
+        pass
+
+    def getStateStr(self):
+        if self.state == State.NORMAL:
+            return 'NORMAL'
+        if self.state == State.INSERT:
+            return 'INSERT'
+        if self.state == State.VISUAL:
+            return 'VISUAL'
+        if self.state == State.COMMAND_LINE:
+            return 'CMD_LINE'
+        assert(False)
 
 
     def moveDown(self,y,x):
@@ -288,12 +320,13 @@ class Editor:
             if self.currentLineIndex < 0:
                 self.currentLineIndex = 0
 
-        elif self.currentLine.nextNode == self.lineLinkedList.end:
+        elif self.currentLine.nextNode != None:
             self.currentLine = self.currentLine.nextNode
             amountToMoveDown = self.lineHeight(self.currentLine)
             while amountToMoveDown > 0:
                 amountToMoveDown -= self.lineHeight(self.topLine)
                 self.topLine = self.topLine.nextNode
+                self.topLineCount += 1
 
 
     def moveUp(self,y,x):
@@ -308,8 +341,9 @@ class Editor:
             self.currentLine = self.currentLine.lastNode
             #self.kill()
             #print(self.currentLine.value)
-            assert(False)
+            #assert(False)
             self.topLine = self.topLine.lastNode
+            self.topLineCount -= 1
 
     def moveLeft(self,y,x):
         if self.editorscr.getyx()[1] > 0:
@@ -335,6 +369,7 @@ class Editor:
         Main loop of the state machine
         """
         while True:
+            self.drawStatus() # draw the status bar text on status bar
             self.drawLines()
             (y,x) = self.editorscr.getyx() # get cursor position relative to top left
             if self.state == State.NORMAL:
@@ -475,19 +510,21 @@ class Editor:
                 elif c == 'v':
                     self.state = State.VISUAL
                 elif c == ':':
-                    pass
                     self.state = State.COMMAND_LINE
 
             if self.state == State.INSERT:
 
                 c = chr(self.editorscr.getch())
 
-                #self.kill()
-                #print(ord(c))
-                #assert(False)
+                if ord(c) == 23: # ctrl + w
+                    # save file
+                    # don't do it like this, use vim-like command
+                    self.saveFile()
 
                 if ord(c) == 27: # escape
+                    self.moveLeft(y,x)
                     self.state = State.NORMAL
+
                 elif ord(c) == 127: # backspace
                     self.currentLine.value = self.currentLine.value[:max(self.currentLineIndex-1,0)]+self.currentLine.value[max(self.currentLineIndex,0):]
                     self.currentLineIndex -= 1
@@ -503,6 +540,9 @@ class Editor:
                     self.drawLines()
 
                 else: # any other character
+                    if self.currentLine.value[-2] != ' ':
+                        self.currentLine.value = self.currentLine.value[:-2]+' \n'
+                        ## work from here
                     self.currentLine.value = self.currentLine.value[:self.currentLineIndex] + c + self.currentLine.value[self.currentLineIndex:]
                     self.currentLineIndex += 1
                     self.drawLines()

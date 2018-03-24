@@ -1,23 +1,27 @@
 Must do:
 
-Implement status bar
-Implement saving
+Implement cmd-line control
+Implement file navigator
 Implement `a` and `A` insertion
 Implement `x` deletion
 Implement `d` deletion
 Add functionality to do an operation multiple times (like `75gg` or `3w`)
 Implement `g` functionality (whatever it is)
 Implement `VISUAL` mode
-Implement file navigator
+Implement a buffer for movement jumps (`w,e,g,etc`) (so you can reverse them)
+Implement a buffer for deletions (so you can recover up to like 1000 deletions or whatever)
 
+Bugs:
+
+Inserting on the last character of the line replaces the last character with what you type
 
 Wishlist:
 Get a save file system going similar to swap
     - Compress it using huffman compression if space is available
 Syntax highlighting
-    - Regex
+    - Regex Lexer (idk, do more research)
 Spellcheck
-    - Factor oracle, suffix trie
+    - Factor oracle, suffix trie (two modes?)
 
 Find a more efficient solution for `w` jumping, one right now is very costly, in this scenario efficiency > elegance
 ***Refactor word jumping (`w` and `b`) for more clean code (decent but could be better)
