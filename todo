@@ -1,6 +1,6 @@
 Must do:
 
-Implement cmd-line control
+Implement more cmd line controls (look at vim docs for ideas)
 Implement file navigator
 Implement `a` and `A` insertion
 Implement `x` deletion
@@ -10,21 +10,36 @@ Implement `g` functionality (whatever it is)
 Implement `VISUAL` mode
 Implement a buffer for movement jumps (`w,e,g,etc`) (so you can reverse them)
 Implement a buffer for deletions (so you can recover up to like 1000 deletions or whatever)
+Implement a buffer for cmd line commands
 
 Bugs:
 
-Inserting on the last character of the line replaces the last character with what you type
+None found
 
-Wishlist:
+
+Wishlist (no particular order):
+Fix up console output (for example `python3` console doesn't work properly at all)
+    - Set up console input
+
 Get a save file system going similar to swap
     - Compress it using huffman compression if space is available
+
 Syntax highlighting
     - Regex Lexer (idk, do more research)
+
 Spellcheck
     - Factor oracle, suffix trie (two modes?)
 
-Find a more efficient solution for `w` jumping, one right now is very costly, in this scenario efficiency > elegance
-***Refactor word jumping (`w` and `b`) for more clean code (decent but could be better)
+Real time automatic testing
+    - Given input to stream in, output to check against, try every couple seconds (if prog will compile) and if it matches notify user (maybe add regex for a little flex)
+
+Inertial Scrolling
+
+Implement night/day color schemes 
+    - Need to refactor color scheming to make it easier in the future anyways
+    - Maybe display `!` in all colors and let the user pick with some prompts?
+
+
 
 ******
 IMPORTANT
@@ -37,4 +52,6 @@ Stuff to mention during 275 presentation:
 	    - talk about python list slices creating a new list, worse for memory too
 
     Talk about usage of abstraction to make implementing features and changing implementations of existing features relatively painless
-	- learned about importance throughout project, came to appreciate it when I had to change line storage from list to linked list to make inserting and deleting lines very fast
+	- learned about importance throughout project, came to appreciate it when I had to change line storage from list to linked list to make inserting and deleting lines very fast (was very easy refactor)
+
+    Talk about `subprocess`, `subprocess.Popen`, etc

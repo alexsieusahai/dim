@@ -7,7 +7,10 @@
 
 from enum import Enum
 import string # ascii, digits lists
-import os # file subsystem
+import os # for file subsystem (os.chdir, os.getcwd, etc)
+import sys # for sys.exit
+import subprocess # for BANG!
+import threading
 
 import curses # drawing the editor
 
@@ -42,6 +45,7 @@ class Editor:
         self.linenumscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, MAX_LINE_NUMBER_LENGTH+1, 0, FILE_SUBSYSTEM_WINDOW_LENGTH)
         self.filenavscr = curses.newwin(self.stdscr.getmaxyx()[0], FILE_SUBSYSTEM_WINDOW_LENGTH, 0, 0)
         self.statusscr = curses.newwin(1,self.stdscr.getmaxyx()[1]-FILE_SUBSYSTEM_WINDOW_LENGTH, self.stdscr.getmaxyx()[0]-2, FILE_SUBSYSTEM_WINDOW_LENGTH)
+        self.cmdlinescr = curses.newwin(1,self.stdscr.getmaxyx()[1]-FILE_SUBSYSTEM_WINDOW_LENGTH, self.stdscr.getmaxyx()[0]-1, FILE_SUBSYSTEM_WINDOW_LENGTH)
 
         # set up curses stuff and colors
         curses.noecho()
@@ -236,26 +240,10 @@ class Editor:
                 break
             self.linenumscr.move(y,0)
 
-
-
-
         # draw the lines themselves
         lineToDraw = self.topLine
         self.editorscr.move(0,0)
         cursorY = 0
-
-
-        #testing
-
-        #if self.lineLinkedList.length == 12:
-        #    self.kill()
-        #    print('this is what drawLines sees')
-        #    print()
-        #    while lineToDraw != None:
-        #        print(lineToDraw.value,end='')
-        #        lineToDraw = lineToDraw.nextNode
-        #    assert(False)
-
         while lineToDraw != None:
 
             if self.editorscr.getyx()[0]+self.lineHeight(lineToDraw) > self.editorscr.getmaxyx()[0]-1: # handle unprintable text (no space at bottom) when scrolling up
@@ -286,13 +274,27 @@ class Editor:
 
     def drawStatus(self):
         self.statusscr.clear()
-        checkStr = (self.getStateStr()+'\t'+os.getcwd()+'/'+self.fileName+'  '+
+        checkStr = (self.getStateStr()+'  '+os.getcwd()+'/'+self.fileName+'  '+
             'Line '+str(self.currentLineCount)+' Column '+str(self.currentLineIndex))
         if len(checkStr) > self.statusscr.getmaxyx()[1]:
             checkStr = checkStr[:self.statusscr.getmaxyx()[1]-2]
         self.statusscr.addstr(checkStr)
         self.statusscr.refresh()
-        pass
+
+    def getCmd(self):
+        cmdStr = ':'
+        c = ''
+        while c != '\n':
+            if c == chr(127):
+                cmdStr = cmdStr[:-1]
+            else:
+                cmdStr += c
+
+            self.cmdlinescr.clear()
+            self.cmdlinescr.addstr(cmdStr)
+            self.cmdlinescr.refresh()
+            c = chr(self.cmdlinescr.getch())
+        return cmdStr
 
     def getStateStr(self):
         if self.state == State.NORMAL:
@@ -362,6 +364,28 @@ class Editor:
 
             if self.currentLine.value[self.currentLineIndex+1] != '\n':
                 self.currentLineIndex += 1
+
+    def outputChatter(self,outputStr):
+        self.editorscr.clear()
+        consoleChatterLines = LineLinkedList(outputStr.split('\n'))
+
+        # save these for later
+        tempLinkedList = self.lineLinkedList
+        tempPointer = self.topLine
+
+        # set these so you can use drawLines
+        self.lineLinkedList = consoleChatterLines
+        self.topLine = self.lineLinkedList.start
+
+        # draw the output
+        self.drawLines()
+        self.editorscr.refresh()
+        self.editorscr.getch()
+        self.lineLinkedList = tempLinkedList
+        self.topLine = tempPointer
+
+        self.lineLinkedList = tempLinkedList
+        self.topLine = tempPointer
 
 
     def run(self):
@@ -540,9 +564,7 @@ class Editor:
                     self.drawLines()
 
                 else: # any other character
-                    if self.currentLine.value[-2] != ' ':
-                        self.currentLine.value = self.currentLine.value[:-2]+' \n'
-                        ## work from here
+                    self.currentLine.value = self.currentLine.value[:-2]+' \n'
                     self.currentLine.value = self.currentLine.value[:self.currentLineIndex] + c + self.currentLine.value[self.currentLineIndex:]
                     self.currentLineIndex += 1
                     self.drawLines()
@@ -552,6 +574,45 @@ class Editor:
                 self.state = State.NORMAL
 
             if self.state == State.COMMAND_LINE:
+                cmd = self.getCmd()
+                cmd = cmd.strip(' \t\n\r')
+                # tokenize based on ' | '
+                cmds = cmd.split('|')
+                #self.kill()
+                #print(cmds)
+                #assert(False)
+                for cmd in cmds:
+                    for cmdChar in cmd:
+                        if cmdChar == 'w':
+                            self.saveFile()
+                        if cmdChar == 'q':
+                            sys.exit(0)
+                        if cmdChar == '!':
+                            #self.stdscr.clear()
+                            #self.editorscr.clear()
+                            #self.linenumscr.clear()
+                            #self.kill()
+                            if cmd[0] == ':':
+                                cmd = cmd[1:]
+                            if cmd[0] == '!':
+                                cmd = cmd[1:]
+
+                            outputStr = ''
+
+                            # fix the input piping and async run
+                            #def externRun(outputStr):
+                            #    subprocess
+                            #externCmdThread = threading.Thread(target=externRun)
+                            with subprocess.Popen(cmd.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE) as proc:
+                                # how does the prog get input? i need something more robust than what I have rn
+                                outputStr = proc.stdout.read().decode()
+
+                            self.statusscr.clear()
+                            self.statusscr.addstr('Please press any key to proceed.')
+                            self.statusscr.refresh()
+                            self.outputChatter(outputStr)
+
+
                 self.state = State.NORMAL
 
 if __name__ == "__main__":
