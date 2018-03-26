@@ -9,6 +9,7 @@ import threading
 import time
 
 import curses # drawing the editor
+from pygments.lexers import PythonLexer
 
 from lineLinkedList import LineLinkedList
 from lineNode import LineNode
@@ -24,48 +25,116 @@ class NormalState(Enum):
     DELETE = 1
     # what else do I need
 
-class ColorSchemes(Enum):
-    # for the syntax highlighter mostly
-    pass
+class SyntaxColors(Enum):
+    TEXT = 0
+    CONSTANT = 1
+    DECLARATION = 2
+    NAMESPACE = 3
+    TYPE = 4
+    NAME = 5
+    FUNCTION = 6
+    STRING_LITERAL = 7
+    NUMBER = 8
+    OPERATOR = 9
+    COMMENT = 10
+
+class Colors(Enum):
+    MEDIUM_GREY = 10
+    WHITE = 11
+    COOL_GREY = 12
+    BLACK = 13
+    YELLOW = 14
+    BLUE = 15
+    FUCHSIA = 16
+    PURPLE = 17
+    BROWN = 18
+    ORANGE = 19
+    GREEN = 20
+    TURQUOISE = 21
+
 
 MAX_LINE_NUMBER_LENGTH = 4
 FILE_SUBSYSTEM_WINDOW_LENGTH = 18
 
 class Editor:
 
-    def __init__(self):
-        # handling curses
-        # init screens
+    def initScreens(self):
+        """
+        This function initializes all the screens to be painted on
+        """
         self.stdscr = curses.initscr()
-        self.editorscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, self.stdscr.getmaxyx()[1]-(MAX_LINE_NUMBER_LENGTH+1)-FILE_SUBSYSTEM_WINDOW_LENGTH, 0, MAX_LINE_NUMBER_LENGTH+1+FILE_SUBSYSTEM_WINDOW_LENGTH)
-        self.linenumscr = curses.newwin(self.stdscr.getmaxyx()[0]-2, MAX_LINE_NUMBER_LENGTH+1, 0, FILE_SUBSYSTEM_WINDOW_LENGTH)
-        self.filenavscr = curses.newwin(self.stdscr.getmaxyx()[0], FILE_SUBSYSTEM_WINDOW_LENGTH, 0, 0)
-        self.statusscr = curses.newwin(1,self.stdscr.getmaxyx()[1]-FILE_SUBSYSTEM_WINDOW_LENGTH, self.stdscr.getmaxyx()[0]-2, FILE_SUBSYSTEM_WINDOW_LENGTH)
-        self.cmdlinescr = curses.newwin(1,self.stdscr.getmaxyx()[1]-FILE_SUBSYSTEM_WINDOW_LENGTH, self.stdscr.getmaxyx()[0]-1, FILE_SUBSYSTEM_WINDOW_LENGTH)
+        self.editorscr = curses.newwin(
+                self.stdscr.getmaxyx()[0]-2,
+                self.stdscr.getmaxyx()[1]-(MAX_LINE_NUMBER_LENGTH+1)-FILE_SUBSYSTEM_WINDOW_LENGTH,
+                0,
+                MAX_LINE_NUMBER_LENGTH+1+FILE_SUBSYSTEM_WINDOW_LENGTH)
 
-        # set up curses stuff and colors
-        curses.noecho()
-        curses.cbreak()
-        curses.start_color() # have to make exceptions for terminals that don't support color
-        curses.init_color(0, 125, 100, 90) # cool grey
-        curses.init_color(5, 400, 400, 400) # medium grey
-        curses.init_color(1, 1000, 1000, 1000) # white
-        curses.init_pair(1, 1, 0)
+        self.linenumscr = curses.newwin(
+                self.stdscr.getmaxyx()[0]-2,
+                MAX_LINE_NUMBER_LENGTH+1,
+                0,
+                FILE_SUBSYSTEM_WINDOW_LENGTH)
+
+        self.filenavscr = curses.newwin(
+                self.stdscr.getmaxyx()[0],
+                FILE_SUBSYSTEM_WINDOW_LENGTH,
+                0,
+                0)
+
+        self.statusscr = curses.newwin(
+                1,
+                self.stdscr.getmaxyx()[1]-FILE_SUBSYSTEM_WINDOW_LENGTH,
+                self.stdscr.getmaxyx()[0]-2,
+                FILE_SUBSYSTEM_WINDOW_LENGTH)
+
+        self.cmdlinescr = curses.newwin(
+                1,
+                self.stdscr.getmaxyx()[1]-FILE_SUBSYSTEM_WINDOW_LENGTH,
+                self.stdscr.getmaxyx()[0]-1,
+                FILE_SUBSYSTEM_WINDOW_LENGTH)
+
+    def initColors(self):
+        """
+        Initialize all colors and color pairs
+        """
+        curses.start_color()
+        curses.init_color(Colors.COOL_GREY.value, 125, 100, 90)
+        curses.init_color(Colors.MEDIUM_GREY.value, 400, 400, 400)
+        curses.init_color(Colors.WHITE.value, 1000, 1000, 1000)
+        curses.init_color(Colors.BLACK.value, 0, 0, 0)
+        curses.init_color(Colors.YELLOW.value, 1000, 1000, 0)
+        curses.init_color(Colors.BLUE.value, 0, 0, 1000)
+        curses.init_color(Colors.FUCHSIA.value, 1000, 1000, 0)
+        curses.init_color(Colors.PURPLE.value, 1000, 1000, 0)
+        curses.init_color(Colors.BROWN.value, 1000, 1000, 0)
+        curses.init_color(Colors.ORANGE.value, 1000, 1000, 0)
+        curses.init_color(Colors.GREEN.value, 1000, 1000, 0)
+        curses.init_color(Colors.TURQUOISE.value, 1000, 1000, 0)
+
+        curses.init_pair(1, Colors.WHITE.value, Colors.COOL_GREY.value)
         self.stdscr.attrset(curses.color_pair(1))
-        curses.init_pair(3, 5, 0) # lighter grey text, cool grey background
+        curses.init_pair(3, Colors.MEDIUM_GREY.value, Colors.COOL_GREY.value) # lighter grey text, cool grey background
         self.linenumscr.attrset(curses.color_pair(3))
 
         # set up something bright for statusscr
-        curses.init_color(2, 0, 0, 0) # black
-        curses.init_pair(2, 0, 1)
+        curses.init_pair(2, Colors.COOL_GREY.value, Colors.WHITE.value)
         self.statusscr.bkgd(' ', curses.color_pair(2))
         self.statusscr.attrset(curses.color_pair(2))
-        self.statusscr.refresh() # apply color
+        self.statusscr.refresh() # apply colorurses.start_color() # have to make exceptions for terminals that don't support color
+
+
+    def __init__(self):
+
+        # set up curses stuff
+        self.initScreens()
+        self.birth()
+        self.initColors()
+
 
         # grabbing the lines from the file
         #self.fileName = 'a.cpp'
         self.fileName = 'index.html'
-        with open(self.fileName, 'r+') as f:
+        with open(self.fileName, 'r') as f:
             self.fileLines = f.readlines()
         # making the linked list
         self.lineLinkedList = LineLinkedList(self.fileLines)
@@ -101,6 +170,10 @@ class Editor:
         self.stdscr.keypad(False)
         curses.endwin()
         #self.saveFile.close() # close the savefile
+
+    def birth(self):
+        curses.noecho()
+        curses.cbreak()
 
     def kill(self):
         curses.echo()
@@ -175,15 +248,6 @@ class Editor:
             temp.lastNode = newNode
 
         self.lineLinkedList.length += 1
-
-        # testing
-
-        #self.kill()
-        #walk = self.lineLinkedList.start
-        #while walk.nextNode != None:
-        #    print(walk.value,end='')
-        #    walk = walk.nextNode
-        #assert(False)
 
         self.drawLines()
 
@@ -269,6 +333,9 @@ class Editor:
         self.editorscr.refresh()
 
     def drawStatus(self):
+        """
+        Draws status using whatever is set as default
+        """
         self.statusscr.clear()
         checkStr = (self.getStateStr()+'  '+os.getcwd()+'/'+self.fileName+'  '+
             'Line '+str(self.currentLineCount)+' Column '+str(self.currentLineIndex))
@@ -278,10 +345,13 @@ class Editor:
         self.statusscr.refresh()
 
     def getCmd(self):
+        """
+        Get command from user when in command mode
+        """
         cmdStr = ':'
         c = ''
         while c != '\n':
-            if c == chr(127):
+            if c == chr(127): # backspace
                 cmdStr = cmdStr[:-1]
             else:
                 cmdStr += c
@@ -301,7 +371,6 @@ class Editor:
             return 'VISUAL'
         if self.state == State.COMMAND_LINE:
             return 'CMD_LINE'
-        assert(False)
 
 
     def moveDown(self,y,x):
@@ -362,6 +431,11 @@ class Editor:
                 self.currentLineIndex += 1
 
     def outputChatter(self,process):
+        """
+        Output whatever process sends to stdout in real time
+        """
+
+        # clean the screen to prepare for output
         self.editorscr.clear()
 
         # save these for later
@@ -388,6 +462,9 @@ class Editor:
                 # draw the output
                 self.drawLines()
                 self.editorscr.refresh()
+
+        # kill the pipe
+        process.stdout.close()
 
         # now wait for the user to send some ready confirmation that he's seen the output and he's good to go
         self.statusscr.clear()
@@ -591,6 +668,7 @@ class Editor:
                 self.state = State.NORMAL
 
             if self.state == State.COMMAND_LINE:
+                # what about if user presses escape?
                 cmd = self.getCmd()
                 cmd = cmd.strip(' \t\n\r')
                 # tokenize based on ' | '
@@ -605,9 +683,12 @@ class Editor:
                         if cmdChar == 'q':
                             sys.exit(0)
                         if cmdChar == '!':
+                            # clear the screens to prep
                             self.stdscr.clear()
                             self.editorscr.clear()
                             self.linenumscr.clear()
+
+                            # kill the process to give stdin pipe back to terminal
                             self.kill()
 
                             if cmd[0] == ':':
@@ -618,6 +699,10 @@ class Editor:
                             process = subprocess.Popen(cmd.split(),stdout=subprocess.PIPE)
 
                             self.outputChatter(process)
+
+                            # bring what we killed back to life
+                            self.birth()
+                            self.run()
 
                 self.state = State.NORMAL
 
