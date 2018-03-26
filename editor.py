@@ -1,8 +1,3 @@
-####
-# Bug notes for insertLine
-# If I walk through all the lines normally and print out the value of each line, then I get the proper values
-# Idk about drawLines()
-
 # look into "wrapper" for debugging
 
 from enum import Enum
@@ -11,6 +6,7 @@ import os # for file subsystem (os.chdir, os.getcwd, etc)
 import sys # for sys.exit
 import subprocess # for BANG!
 import threading
+import time
 
 import curses # drawing the editor
 
@@ -365,27 +361,48 @@ class Editor:
             if self.currentLine.value[self.currentLineIndex+1] != '\n':
                 self.currentLineIndex += 1
 
-    def outputChatter(self,outputStr):
+    def outputChatter(self,process):
         self.editorscr.clear()
-        consoleChatterLines = LineLinkedList(outputStr.split('\n'))
 
         # save these for later
         tempLinkedList = self.lineLinkedList
         tempPointer = self.topLine
 
-        # set these so you can use drawLines
-        self.lineLinkedList = consoleChatterLines
-        self.topLine = self.lineLinkedList.start
+        outputStr = ''
 
-        # draw the output
+        while True:
+
+            out = process.stdout.read(1).decode()
+            if out == '' and process.poll() != None:
+                break
+            if out == '':
+                outputStr = process.poll()
+            if out != '':
+                outputStr += out
+                consoleChatterLines = LineLinkedList(outputStr.split('\n'))
+
+                # set these so you can use drawLines
+                self.lineLinkedList = consoleChatterLines
+                self.topLine = self.lineLinkedList.start
+
+                # draw the output
+                self.drawLines()
+                self.editorscr.refresh()
+
+        # now wait for the user to send some ready confirmation that he's seen the output and he's good to go
+        self.statusscr.clear()
+        self.statusscr.addstr('Please press any key to proceed.')
+        self.statusscr.refresh()
+
+        self.editorscr.getch() # wait for confirmation
+
+        # set the old lines and topline back
+        self.lineLinkedList = tempLinkedList
+        self.topLine = tempPointer
+
         self.drawLines()
         self.editorscr.refresh()
-        self.editorscr.getch()
-        self.lineLinkedList = tempLinkedList
-        self.topLine = tempPointer
 
-        self.lineLinkedList = tempLinkedList
-        self.topLine = tempPointer
 
 
     def run(self):
@@ -588,30 +605,19 @@ class Editor:
                         if cmdChar == 'q':
                             sys.exit(0)
                         if cmdChar == '!':
-                            #self.stdscr.clear()
-                            #self.editorscr.clear()
-                            #self.linenumscr.clear()
-                            #self.kill()
+                            self.stdscr.clear()
+                            self.editorscr.clear()
+                            self.linenumscr.clear()
+                            self.kill()
+
                             if cmd[0] == ':':
                                 cmd = cmd[1:]
                             if cmd[0] == '!':
                                 cmd = cmd[1:]
 
-                            outputStr = ''
+                            process = subprocess.Popen(cmd.split(),stdout=subprocess.PIPE)
 
-                            # fix the input piping and async run
-                            #def externRun(outputStr):
-                            #    subprocess
-                            #externCmdThread = threading.Thread(target=externRun)
-                            with subprocess.Popen(cmd.split(), stdin=subprocess.PIPE, stdout=subprocess.PIPE) as proc:
-                                # how does the prog get input? i need something more robust than what I have rn
-                                outputStr = proc.stdout.read().decode()
-
-                            self.statusscr.clear()
-                            self.statusscr.addstr('Please press any key to proceed.')
-                            self.statusscr.refresh()
-                            self.outputChatter(outputStr)
-
+                            self.outputChatter(process)
 
                 self.state = State.NORMAL
 

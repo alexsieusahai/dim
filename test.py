@@ -1,3 +1,3 @@
-input()
-print('running test.py')
+print('give me input')
+print(input())
 
