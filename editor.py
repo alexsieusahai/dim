@@ -20,6 +20,7 @@ class State(Enum):
     INSERT = 1
     VISUAL = 2
     COMMAND_LINE = 3
+    FILE_NAVIGATION = 4
 
 class NormalState(Enum):
     MOVEMENT = 0
@@ -715,8 +716,29 @@ class Editor:
                 # move to different states
                 elif c == 'i':
                     self.state = State.INSERT
+
+                elif c == 'a':
+                    if self.getNextChar() == '\n':
+                        self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
+                        self.currentLine.colors.append(0)
+                        # insert a space
+                    self.moveRight(y,x)
+                    self.drawLines()
+                    self.state = State.INSERT
+
+                elif c == 'A':
+                    self.moveToEndOfLine()
+                    if self.getNextChar() == '\n':
+                        self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
+                        self.currentLine.colors.append(0)
+                        # insert a space
+                    self.moveRight(y,x)
+                    self.drawLines()
+                    self.state = State.INSERT
+
                 elif c == 'v':
                     self.state = State.VISUAL
+
                 elif c == ':':
                     self.state = State.COMMAND_LINE
 

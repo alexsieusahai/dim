@@ -1,9 +1,8 @@
 Must do:
 
 Implement file navigator
-Implement `a` and `A` insertion
 Implement `x` deletion
-Implement `d` deletion
+Implement `dd` deletion
 Implement `u` undo and `ctrl+r` redo
 
 Can do this one whenever, 0 thought required
