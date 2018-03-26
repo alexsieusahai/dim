@@ -10,6 +10,7 @@ import time
 
 import curses # drawing the editor
 from pygments.lexers import PythonLexer
+import pygments
 
 from lineLinkedList import LineLinkedList
 from lineNode import LineNode
@@ -26,25 +27,27 @@ class NormalState(Enum):
     # what else do I need
 
 class SyntaxColors(Enum):
-    TEXT = 0
-    CONSTANT = 1
-    DECLARATION = 2
-    NAMESPACE = 3
-    TYPE = 4
-    NAME = 5
-    FUNCTION = 6
-    STRING_LITERAL = 7
-    NUMBER = 8
-    OPERATOR = 9
-    COMMENT = 10
+    TEXT = 20
+    CONSTANT = 21
+    DECLARATION = 22
+    NAMESPACE = 23
+    TYPE = 24
+    NAME = 25
+    FUNCTION = 26
+    STRING_LITERAL = 27
+    NUMBER = 28
+    OPERATOR = 29
+    COMMENT = 30
+    LINE_NUMBER = 31
+    STATUS = 32
 
 class Colors(Enum):
     MEDIUM_GREY = 10
     WHITE = 11
     COOL_GREY = 12
     BLACK = 13
-    YELLOW = 14
-    BLUE = 15
+    YELLOW = 15
+    BLUE = 14
     FUCHSIA = 16
     PURPLE = 17
     BROWN = 18
@@ -102,8 +105,8 @@ class Editor:
         curses.init_color(Colors.MEDIUM_GREY.value, 400, 400, 400)
         curses.init_color(Colors.WHITE.value, 1000, 1000, 1000)
         curses.init_color(Colors.BLACK.value, 0, 0, 0)
-        curses.init_color(Colors.YELLOW.value, 1000, 1000, 0)
-        curses.init_color(Colors.BLUE.value, 0, 0, 1000)
+        curses.init_color(Colors.BLUE.value, 1000, 1000, 0)
+        curses.init_color(Colors.YELLOW.value, 0, 0, 1000)
         curses.init_color(Colors.FUCHSIA.value, 1000, 0, 500)
         curses.init_color(Colors.PURPLE.value, 600, 200, 900)
         curses.init_color(Colors.BROWN.value, 750, 200, 70)
@@ -111,24 +114,25 @@ class Editor:
         curses.init_color(Colors.LIME_GREEN.value, 0, 1000, 500)
         curses.init_color(Colors.TURQUOISE.value, 150, 1000, 700)
 
+        curses.init_pair(SyntaxColors.TEXT.value, Colors.WHITE.value, Colors.COOL_GREY.value)
+        curses.init_pair(SyntaxColors.LINE_NUMBER.value, Colors.MEDIUM_GREY.value, Colors.COOL_GREY.value) # lighter grey text, cool grey background
+        curses.init_pair(SyntaxColors.STATUS.value, Colors.BLACK.value, Colors.WHITE.value)
+        curses.init_pair(SyntaxColors.COMMENT.value, Colors.TURQUOISE.value, Colors.COOL_GREY.value)
 
-        curses.init_pair(1, Colors.WHITE.value, Colors.COOL_GREY.value)
-        self.stdscr.attrset(curses.color_pair(1))
-        self.stdscr.bkgd(' ', curses.color_pair(1))
-        self.editorscr.bkgd(' ', curses.color_pair(1))
-        self.filenavscr.bkgd(' ', curses.color_pair(1))
+        self.stdscr.attrset(curses.color_pair(SyntaxColors.TEXT.value))
+        self.stdscr.bkgd(' ', curses.color_pair(SyntaxColors.TEXT.value))
+        self.editorscr.bkgd(' ', curses.color_pair(SyntaxColors.TEXT.value))
+        self.filenavscr.bkgd(' ', curses.color_pair(SyntaxColors.TEXT.value))
         self.filenavscr.refresh()
 
-        curses.init_pair(3, Colors.MEDIUM_GREY.value, Colors.COOL_GREY.value) # lighter grey text, cool grey background
-        self.linenumscr.attrset(curses.color_pair(3))
-        self.linenumscr.bkgd(' ', curses.color_pair(1))
-        #self.linenumscr.bkgd(32, Colors.COOL_GREY.value)
+        self.linenumscr.attrset(curses.color_pair(SyntaxColors.LINE_NUMBER.value))
+        self.linenumscr.bkgd(' ', curses.color_pair(SyntaxColors.TEXT.value))
 
         # set up something bright for statusscr
-        curses.init_pair(2, Colors.BLACK.value, Colors.WHITE.value)
-        self.statusscr.bkgd(' ', curses.color_pair(2))
-        self.statusscr.attrset(curses.color_pair(2))
-        self.statusscr.refresh() # apply colorurses.start_color() # have to make exceptions for terminals that don't support color
+        self.statusscr.bkgd(' ', curses.color_pair(SyntaxColors.STATUS.value))
+        self.statusscr.attrset(curses.color_pair(SyntaxColors.STATUS.value))
+        self.statusscr.refresh()
+
 
 
     def __init__(self):
@@ -140,8 +144,9 @@ class Editor:
 
 
         # grabbing the lines from the file
-        #self.fileName = 'a.cpp'
+        self.fileName = 'a.cpp'
         self.fileName = 'index.html'
+        self.fileName = 'test.py'
         with open(self.fileName, 'r') as f:
             self.fileLines = f.readlines()
         # making the linked list
@@ -229,6 +234,7 @@ class Editor:
 
         self.currentLineIndex = len(lineNode.lastNode.value)-1
         lineNode.lastNode.value = lineNode.lastNode.value[:-1]+lineNode.value[:-1]+'\n'
+        lineNode.lastNode.colors = lineNode.lastNode.colors[:-1]+lineNode.colors
         lineNode.lastNode.nextNode = lineNode.nextNode
         # handle edge case
         if lineNode.nextNode != None:
@@ -317,13 +323,16 @@ class Editor:
             if self.editorscr.getyx()[0]+self.lineHeight(lineToDraw) > self.editorscr.getmaxyx()[0]-1: # handle unprintable text (no space at bottom) when scrolling up
                 self.editorscr.addstr('@')
                 break
-            if lineToDraw.value == 'using namespace std;\n' and lineToDraw.lastNode.value == 'using\n':
-                assert(False)
+            i = 0
             for c in lineToDraw.value:
-                self.editorscr.addstr(c)
+                # example for colors
+                #self.editorscr.addstr(c)
+                self.editorscr.addstr(c,curses.color_pair(lineToDraw.colors[i]))
                 if self.editorscr.getyx()[1]+1 > self.editorscr.getmaxyx()[1]-1: # we have reached the end of the line horizontally
                     cursorY += 1
                     self.editorscr.move(cursorY,0)
+                i += 1
+
             if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0]-1:
                 break
             self.editorscr.move(cursorY+1,0)
@@ -489,12 +498,44 @@ class Editor:
         self.editorscr.refresh()
 
 
+    def setUpSyntaxHighlighting(self):
+        pylex = PythonLexer()
+        # lets build the string to parse
+        syntax = ''
+        walk = self.lineLinkedList.start
+        while walk != None:
+            syntax += walk.value
+            walk = walk.nextNode
+
+        walk = self.lineLinkedList.start
+
+        i = 0 # index of where i am walking through the string
+        for token in pylex.get_tokens(syntax):
+
+            if token[1] == '\n':
+                walk = walk.nextNode
+                i = 0
+                if walk == None:
+                    break
+
+
+            tokenType = SyntaxColors.TEXT.value # assume everything is text and show otherwise
+            # set tokenType
+            if pygments.token.Comment.Single in token[0]:
+                tokenType = SyntaxColors.COMMENT.value
+
+            for c in token[1]:
+                walk.colors[i] = tokenType
+                i += 1
 
     def run(self):
         """
         Main loop of the state machine
         """
         while True:
+
+            self.setUpSyntaxHighlighting()
+
             self.drawStatus() # draw the status bar text on status bar
             self.drawLines()
             (y,x) = self.editorscr.getyx() # get cursor position relative to top left
@@ -654,10 +695,10 @@ class Editor:
                 elif ord(c) == 127: # backspace
                     self.currentLine.value = self.currentLine.value[:max(self.currentLineIndex-1,0)]+self.currentLine.value[max(self.currentLineIndex,0):]
                     self.currentLineIndex -= 1
+                    self.colors = self.currentLine.colors[:-1]
                     if self.currentLineIndex == -1:
                         # delete the line
                         self.currentLine = self.deleteLine(self.currentLine)
-                        s = self.currentLine.value
                         self.drawLines()
 
                 elif ord(c) == 10: # enter
@@ -669,6 +710,7 @@ class Editor:
                     self.currentLine.value = self.currentLine.value[:-2]+' \n'
                     self.currentLine.value = self.currentLine.value[:self.currentLineIndex] + c + self.currentLine.value[self.currentLineIndex:]
                     self.currentLineIndex += 1
+                    self.currentLine.colors.append(0)
                     self.drawLines()
 
 

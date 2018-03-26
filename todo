@@ -1,5 +1,6 @@
 Must do:
 
+Finish implementing syntax highlighting
 Implement file navigator
 Implement `a` and `A` insertion
 Implement `x` deletion
@@ -26,9 +27,6 @@ Fix up console output (for example `python3` console doesn't work properly at al
 
 Get a save file system going similar to swap
     - Compress it using huffman compression if space is available (can check using os)
-
-Syntax highlighting
-    - Regex Lexer (idk, do more research)
 
 Spellcheck
     - Factor oracle, suffix trie (two modes?)
