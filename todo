@@ -1,11 +1,14 @@
 Must do:
 
-Finish implementing syntax highlighting
 Implement file navigator
 Implement `a` and `A` insertion
 Implement `x` deletion
 Implement `d` deletion
 Implement `u` undo and `ctrl+r` redo
+
+Can do this one whenever, 0 thought required
+    - Switch to a more pastel color scheme
+
 Add functionality to do an operation multiple times (like `75gg` or `3w`)
 Implement `g` functionality (whatever it is)
 Implement `VISUAL` mode
@@ -40,7 +43,7 @@ Implement night/day color schemes
     - Need to refactor color scheming to make it easier in the future anyways
     - Maybe display `!` in all colors and let the user pick with some prompts?
 
-
+Konami Code easter egg
 
 ******
 IMPORTANT
@@ -57,3 +60,6 @@ Stuff to mention during 275 presentation:
 
     Talk about `subprocess`, `subprocess.Popen`, etc
         - Bang! implementation; pipe handling
+
+    Implemented Syntax Highlighting using `pygments`
+        - Used a colors array for each line, kept control of it really similar to the text itself

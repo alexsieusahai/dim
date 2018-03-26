@@ -9,7 +9,7 @@ import threading
 import time
 
 import curses # drawing the editor
-from pygments.lexers import PythonLexer
+from pygments.lexers import Python3Lexer
 import pygments
 
 from lineLinkedList import LineLinkedList
@@ -35,11 +35,13 @@ class SyntaxColors(Enum):
     NAME = 25
     FUNCTION = 26
     STRING_LITERAL = 27
-    NUMBER = 28
+    LITERAL = 28
     OPERATOR = 29
     COMMENT = 30
     LINE_NUMBER = 31
     STATUS = 32
+    KEYWORD = 33
+    BUILTIN = 34
 
 class Colors(Enum):
     MEDIUM_GREY = 10
@@ -54,6 +56,9 @@ class Colors(Enum):
     ORANGE = 19
     LIME_GREEN = 20
     TURQUOISE = 21
+    CYAN = 22
+    LIGHT_GREY = 23
+    PASTEL_RED = 24
 
 
 MAX_LINE_NUMBER_LENGTH = 4
@@ -103,21 +108,31 @@ class Editor:
         curses.start_color()
         curses.init_color(Colors.COOL_GREY.value, 125, 150, 175)
         curses.init_color(Colors.MEDIUM_GREY.value, 400, 400, 400)
+        curses.init_color(Colors.LIGHT_GREY.value, 700, 700, 700)
         curses.init_color(Colors.WHITE.value, 1000, 1000, 1000)
         curses.init_color(Colors.BLACK.value, 0, 0, 0)
-        curses.init_color(Colors.BLUE.value, 1000, 1000, 0)
-        curses.init_color(Colors.YELLOW.value, 0, 0, 1000)
+        curses.init_color(Colors.YELLOW.value, 1000, 1000, 0)
+        curses.init_color(Colors.BLUE.value, 0, 0, 1000)
         curses.init_color(Colors.FUCHSIA.value, 1000, 0, 500)
         curses.init_color(Colors.PURPLE.value, 600, 200, 900)
         curses.init_color(Colors.BROWN.value, 750, 200, 70)
         curses.init_color(Colors.ORANGE.value, 1000, 350, 0)
         curses.init_color(Colors.LIME_GREEN.value, 0, 1000, 500)
         curses.init_color(Colors.TURQUOISE.value, 150, 1000, 700)
+        curses.init_color(Colors.CYAN.value, 0, 1000, 1000)
+        curses.init_color(Colors.PASTEL_RED.value, 1000, 410, 380)
 
         curses.init_pair(SyntaxColors.TEXT.value, Colors.WHITE.value, Colors.COOL_GREY.value)
         curses.init_pair(SyntaxColors.LINE_NUMBER.value, Colors.MEDIUM_GREY.value, Colors.COOL_GREY.value) # lighter grey text, cool grey background
         curses.init_pair(SyntaxColors.STATUS.value, Colors.BLACK.value, Colors.WHITE.value)
-        curses.init_pair(SyntaxColors.COMMENT.value, Colors.TURQUOISE.value, Colors.COOL_GREY.value)
+        curses.init_pair(SyntaxColors.COMMENT.value, Colors.LIGHT_GREY.value, Colors.COOL_GREY.value)
+        curses.init_pair(SyntaxColors.NAMESPACE.value, Colors.LIME_GREEN.value, Colors.COOL_GREY.value)
+        curses.init_pair(SyntaxColors.KEYWORD.value, Colors.ORANGE.value, Colors.COOL_GREY.value)
+        curses.init_pair(SyntaxColors.BUILTIN.value, Colors.CYAN.value, Colors.COOL_GREY.value)
+        curses.init_pair(SyntaxColors.FUNCTION.value, Colors.LIME_GREEN.value, Colors.COOL_GREY.value)
+        curses.init_pair(SyntaxColors.LITERAL.value, Colors.PASTEL_RED.value, Colors.COOL_GREY.value)
+        curses.init_pair(SyntaxColors.OPERATOR.value, Colors.YELLOW.value, Colors.COOL_GREY.value)
+        curses.init_pair(SyntaxColors.STRING_LITERAL.value, Colors.BROWN.value, Colors.COOL_GREY.value)
 
         self.stdscr.attrset(curses.color_pair(SyntaxColors.TEXT.value))
         self.stdscr.bkgd(' ', curses.color_pair(SyntaxColors.TEXT.value))
@@ -126,7 +141,7 @@ class Editor:
         self.filenavscr.refresh()
 
         self.linenumscr.attrset(curses.color_pair(SyntaxColors.LINE_NUMBER.value))
-        self.linenumscr.bkgd(' ', curses.color_pair(SyntaxColors.TEXT.value))
+        self.linenumscr.bkgd(' ', curses.color_pair(SyntaxColors.LINE_NUMBER.value))
 
         # set up something bright for statusscr
         self.statusscr.bkgd(' ', curses.color_pair(SyntaxColors.STATUS.value))
@@ -499,7 +514,7 @@ class Editor:
 
 
     def setUpSyntaxHighlighting(self):
-        pylex = PythonLexer()
+        pylex = Python3Lexer()
         # lets build the string to parse
         syntax = ''
         walk = self.lineLinkedList.start
@@ -509,20 +524,46 @@ class Editor:
 
         walk = self.lineLinkedList.start
 
+        #self.kill()
+        #for token in pylex.get_tokens(syntax):
+        #    print(token)
+        #assert(False)
+
         i = 0 # index of where i am walking through the string
+
         for token in pylex.get_tokens(syntax):
 
             if token[1] == '\n':
                 walk = walk.nextNode
-                i = 0
+                i = -1
                 if walk == None:
                     break
 
+            tokenType = SyntaxColors.TEXT.value # assume everything is text and find contradiction
 
-            tokenType = SyntaxColors.TEXT.value # assume everything is text and show otherwise
-            # set tokenType
-            if pygments.token.Comment.Single in token[0]:
+            if pygments.token.Comment.Single == token[0]:
                 tokenType = SyntaxColors.COMMENT.value
+
+            if pygments.token.Keyword.Namespace == token[0]:
+                tokenType = SyntaxColors.NAMESPACE.value
+
+            if pygments.token.Keyword == token[0]:
+                tokenType = SyntaxColors.KEYWORD.value
+
+            if pygments.token.Name.Builtin == token[0]:
+                tokenType = SyntaxColors.BUILTIN.value
+
+            if pygments.token.Name.Function == token[0]:
+                tokenType = SyntaxColors.FUNCTION.value
+
+            if pygments.token.Literal.Number.Integer == token[0] or pygments.token.Literal.Number.Float == token[0]:
+                tokenType = SyntaxColors.LITERAL.value
+
+            if pygments.token.Operator == token[0]:
+                tokenType = SyntaxColors.OPERATOR.value
+
+            if pygments.token.Literal.String.Single == token[0]:
+                tokenType = SyntaxColors.STRING_LITERAL.value
 
             for c in token[1]:
                 walk.colors[i] = tokenType
@@ -707,7 +748,6 @@ class Editor:
                     self.drawLines()
 
                 else: # any other character
-                    self.currentLine.value = self.currentLine.value[:-2]+' \n'
                     self.currentLine.value = self.currentLine.value[:self.currentLineIndex] + c + self.currentLine.value[self.currentLineIndex:]
                     self.currentLineIndex += 1
                     self.currentLine.colors.append(0)
