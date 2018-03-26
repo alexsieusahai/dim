@@ -49,7 +49,7 @@ class Colors(Enum):
     PURPLE = 17
     BROWN = 18
     ORANGE = 19
-    GREEN = 20
+    LIME_GREEN = 20
     TURQUOISE = 21
 
 
@@ -98,26 +98,34 @@ class Editor:
         Initialize all colors and color pairs
         """
         curses.start_color()
-        curses.init_color(Colors.COOL_GREY.value, 125, 100, 90)
+        curses.init_color(Colors.COOL_GREY.value, 125, 150, 175)
         curses.init_color(Colors.MEDIUM_GREY.value, 400, 400, 400)
         curses.init_color(Colors.WHITE.value, 1000, 1000, 1000)
         curses.init_color(Colors.BLACK.value, 0, 0, 0)
         curses.init_color(Colors.YELLOW.value, 1000, 1000, 0)
         curses.init_color(Colors.BLUE.value, 0, 0, 1000)
-        curses.init_color(Colors.FUCHSIA.value, 1000, 1000, 0)
-        curses.init_color(Colors.PURPLE.value, 1000, 1000, 0)
-        curses.init_color(Colors.BROWN.value, 1000, 1000, 0)
-        curses.init_color(Colors.ORANGE.value, 1000, 1000, 0)
-        curses.init_color(Colors.GREEN.value, 1000, 1000, 0)
-        curses.init_color(Colors.TURQUOISE.value, 1000, 1000, 0)
+        curses.init_color(Colors.FUCHSIA.value, 1000, 0, 500)
+        curses.init_color(Colors.PURPLE.value, 600, 200, 900)
+        curses.init_color(Colors.BROWN.value, 750, 200, 70)
+        curses.init_color(Colors.ORANGE.value, 1000, 350, 0)
+        curses.init_color(Colors.LIME_GREEN.value, 0, 1000, 500)
+        curses.init_color(Colors.TURQUOISE.value, 150, 1000, 700)
+
 
         curses.init_pair(1, Colors.WHITE.value, Colors.COOL_GREY.value)
         self.stdscr.attrset(curses.color_pair(1))
+        self.stdscr.bkgd(' ', curses.color_pair(1))
+        self.editorscr.bkgd(' ', curses.color_pair(1))
+        self.filenavscr.bkgd(' ', curses.color_pair(1))
+        self.filenavscr.refresh()
+
         curses.init_pair(3, Colors.MEDIUM_GREY.value, Colors.COOL_GREY.value) # lighter grey text, cool grey background
         self.linenumscr.attrset(curses.color_pair(3))
+        self.linenumscr.bkgd(' ', curses.color_pair(1))
+        #self.linenumscr.bkgd(32, Colors.COOL_GREY.value)
 
         # set up something bright for statusscr
-        curses.init_pair(2, Colors.COOL_GREY.value, Colors.WHITE.value)
+        curses.init_pair(2, Colors.BLACK.value, Colors.WHITE.value)
         self.statusscr.bkgd(' ', curses.color_pair(2))
         self.statusscr.attrset(curses.color_pair(2))
         self.statusscr.refresh() # apply colorurses.start_color() # have to make exceptions for terminals that don't support color
