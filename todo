@@ -1,5 +1,8 @@
 Must do:
 
+Important!
+    Refactor drawLines so you can use it for filenavscr aswell
+
 Implement file navigator
 Implement `x` deletion
 Implement `dd` deletion

@@ -14,6 +14,7 @@ import pygments
 
 from lineLinkedList import LineLinkedList
 from lineNode import LineNode
+from editorAttributes import EditorAttributes
 
 class State(Enum):
     NORMAL = 0
@@ -28,6 +29,13 @@ class NormalState(Enum):
     # what else do I need
 
 class SyntaxColors(Enum):
+
+    # file nav stuff
+    FILE = 1
+    FOLDER = 2
+    EXECUTABLE = 3
+
+    # editor (syntax highlighting) stuff
     TEXT = 20
     CONSTANT = 21
     DECLARATION = 22
@@ -45,6 +53,7 @@ class SyntaxColors(Enum):
     BUILTIN = 34
 
 class Colors(Enum):
+
     MEDIUM_GREY = 10
     WHITE = 11
     COOL_GREY = 12
@@ -60,7 +69,6 @@ class Colors(Enum):
     CYAN = 22
     LIGHT_GREY = 23
     PASTEL_RED = 24
-
 
 MAX_LINE_NUMBER_LENGTH = 4
 FILE_SUBSYSTEM_WINDOW_LENGTH = 18
@@ -135,6 +143,10 @@ class Editor:
         curses.init_pair(SyntaxColors.OPERATOR.value, Colors.YELLOW.value, Colors.COOL_GREY.value)
         curses.init_pair(SyntaxColors.STRING_LITERAL.value, Colors.BROWN.value, Colors.COOL_GREY.value)
 
+        # file nav pairs
+        curses.init_pair(SyntaxColors.FILE.value, Colors.LIGHT_GREY.value, Colors.COOL_GREY.value)
+        curses.init_pair(SyntaxColors.FOLDER.value, Colors.CYAN.value, Colors.COOL_GREY.value)
+
         self.stdscr.attrset(curses.color_pair(SyntaxColors.TEXT.value))
         self.stdscr.bkgd(' ', curses.color_pair(SyntaxColors.TEXT.value))
         self.editorscr.bkgd(' ', curses.color_pair(SyntaxColors.TEXT.value))
@@ -149,7 +161,11 @@ class Editor:
         self.statusscr.attrset(curses.color_pair(SyntaxColors.STATUS.value))
         self.statusscr.refresh()
 
-
+    def loadFile(self,fileName):
+        with open(self.fileName, 'r') as f:
+            self.fileLines = f.readlines()
+        # making the linked list
+        return(LineLinkedList(self.fileLines))
 
     def __init__(self):
 
@@ -158,15 +174,11 @@ class Editor:
         self.birth()
         self.initColors()
 
-
         # grabbing the lines from the file
         self.fileName = 'a.cpp'
         self.fileName = 'index.html'
         self.fileName = 'test.py'
-        with open(self.fileName, 'r') as f:
-            self.fileLines = f.readlines()
-        # making the linked list
-        self.lineLinkedList = LineLinkedList(self.fileLines)
+        self.lineLinkedList = self.loadFile(self.fileName)
 
         # make and store the savefile here
 
@@ -295,6 +307,8 @@ class Editor:
 
     def drawLines(self):
         """
+        Takes in a scr object from which it draws on
+
         Draws the line numbers and the lines themselves onto the ui
         O(n) where n is the number of blocks that can fit onto the terminal, but since n is very small and theta(n) is a fraction of n usually < n/2 this is fine.
         """
@@ -386,6 +400,8 @@ class Editor:
         while c != '\n':
             if c == chr(127): # backspace
                 cmdStr = cmdStr[:-1]
+            elif c == chr(27): # escape
+                return chr(27)
             else:
                 cmdStr += c
 
@@ -398,12 +414,16 @@ class Editor:
     def getStateStr(self):
         if self.state == State.NORMAL:
             return 'NORMAL'
-        if self.state == State.INSERT:
+        elif self.state == State.INSERT:
             return 'INSERT'
-        if self.state == State.VISUAL:
+        elif self.state == State.VISUAL:
             return 'VISUAL'
-        if self.state == State.COMMAND_LINE:
+        elif self.state == State.COMMAND_LINE:
             return 'CMD_LINE'
+        elif self.state == State.FILE_NAVIGATION:
+            return 'FILE_NAV'
+        else:
+            return 'UNKNOWN_STATE'
 
 
     def moveDown(self,y,x):
@@ -569,6 +589,66 @@ class Editor:
             for c in token[1]:
                 walk.colors[i] = tokenType
                 i += 1
+
+    def drawAndRefreshFileNavigation(self):
+
+        self.filenavscr.clear()
+
+        # draw the directory
+        y = 0
+        self.filenavscr.move(y,0)
+
+        self.dirs = ['..']+os.listdir()
+        for directory in self.dirs:
+            self.filenavscr.addstr(directory)
+            self.filenavscr.move(y,0)
+            y += 1
+
+        y = 0
+        self.filenavscr.move(y,0)
+
+
+    def runFileNavigation(self):
+
+        self.drawAndRefreshFileNavigation()
+
+        y = 0
+
+        while True:
+            c = chr(self.filenavscr.getch())
+
+            if c == '`':
+                self.state = State.NORMAL
+                break
+
+            if c == 'k':
+                y -= 1
+                if y < 0:
+                    y += 1
+                self.filenavscr.move(y,0)
+
+            if c == 'j':
+                y += 1
+                if y > len(self.dirs)-2:
+                    y -= 1
+                self.filenavscr.move(y,0)
+
+            if c == '\n':
+                try:
+                    os.chdir(self.dirs[y+1])
+                except:
+                    self.fileName = self.dirs[y+1]
+                    self.lineLinkedList = self.loadFile(self.fileName)
+                    self.topLine = self.currentLine = self.lineLinkedList.start
+                    self.currentLineIndex = 0
+                    self.setUpSyntaxHighlighting()
+                    self.drawLines()
+
+                self.drawAndRefreshFileNavigation()
+                y = 0
+
+            self.filenavscr.refresh()
+
 
     def run(self):
         """
@@ -742,6 +822,9 @@ class Editor:
                 elif c == ':':
                     self.state = State.COMMAND_LINE
 
+                elif c == '`':
+                    self.state = State.FILE_NAVIGATION
+
             if self.state == State.INSERT:
 
                 c = chr(self.editorscr.getch())
@@ -776,14 +859,17 @@ class Editor:
                     self.drawLines()
 
 
-            if self.state == State.VISUAL:
+            elif self.state == State.VISUAL:
                 self.state = State.NORMAL
 
-            if self.state == State.COMMAND_LINE:
+            elif self.state == State.COMMAND_LINE:
                 # what about if user presses escape?
                 cmd = self.getCmd()
+                if cmd == chr(27): # escape character
+                    self.state = State.NORMAL
+                    continue
                 cmd = cmd.strip(' \t\n\r')
-                # tokenize based on ' | '
+                # tokenize based on '|'
                 cmds = cmd.split('|')
                 #self.kill()
                 #print(cmds)
@@ -814,9 +900,14 @@ class Editor:
 
                             # bring what we killed back to life
                             self.birth()
-                            self.run()
 
+                # set state to normal upon exit
                 self.state = State.NORMAL
+
+            elif self.state == State.FILE_NAVIGATION:
+                self.runFileNavigation()
+
+
 
 if __name__ == "__main__":
     editor = Editor()
