@@ -1,4 +1,4 @@
-Must do:
+Should do (in order probably):
 
 Implement fast file searching using binary search 
     - See if the substring matches from beginning onwards, naive solution is fine I think since you're only doing it O(logn) ttimes 
