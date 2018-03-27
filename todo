@@ -1,19 +1,25 @@
 Must do:
 
-Implement fast file searching using binary search (O(logn) vs O(n) for naive)
+Implement fast file searching using binary search 
+    - See if the substring matches from beginning onwards, naive solution is fine I think since you're only doing it O(logn) ttimes 
+    - Implement highlighting attribute overall, will be useful for `VISUAL` mode
+
 Implement substring matching (searching feature) in file using KMP for O(n)
 Implement a 'rope' data structure for fast insertion into a line (O(1) instead of O(n))
-Refactor jumps so it's a lot faster
+Refactor jumps ('w','e','b') so it's a lot faster
 Implement `x` deletion
 Implement `dd` deletion
 Implement deletion buffer
 Implement `u` undo and `ctrl+r` redo (with buffers)
 
+IMPORTANT:
+    - Make tests for all data structures and algorithms that run if that python script is running in main namespace 
+	- might have to do some refactoring with the imports for that
+
 Can do this one whenever, 0 thought required
     - Switch to a more pastel color scheme
 
-Add functionality to do an operation multiple times (like `75gg` or `3w`)
-Implement `g` functionality (whatever it is)
+Add functionality to do an operation multiple times (like `3w`)
 Implement `VISUAL` mode
 Implement a buffer for movement jumps (`w,e,g,etc`) (so you can reverse them)
 Implement `ctrl+O` and `ctrl+I` movement
@@ -24,7 +30,15 @@ Implement more cmd line controls (look at vim docs for ideas)
 
 Bugs:
 
-None found
+- Doesn't work on empty files 
+
+
+*********************
+ONCE IT'S FINISHED
+*********************
+Prettify the `README.md` page, with gifs and screenshots and a link to a manual
+Implement some sort of bug sending feature which sends bugs to my inbox
+
 
 
 Wishlist (no particular order):
@@ -41,6 +55,7 @@ Real time automatic testing
     - Given input to stream in, output to check against, try every couple seconds (if prog will compile) and if it matches notify user (maybe add regex for a little flex)
 
 Inertial Scrolling
+    - have to make drawLines faster before doing this
 
 Implement night/day color schemes 
     - Need to refactor color scheming to make it easier in the future anyways

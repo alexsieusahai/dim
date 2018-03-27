@@ -161,25 +161,6 @@ class MainScr:
         self.statusscr.addstr(checkStr)
         self.statusscr.refresh()
 
-    def getCmd(self):
-        """
-        Get command from user when in command mode
-        """
-        cmdStr = ':'
-        c = ''
-        while c != '\n':
-            if c == chr(127): # backspace
-                cmdStr = cmdStr[:-1]
-            elif c == chr(27): # escape
-                return chr(27)
-            else:
-                cmdStr += c
-
-            self.cmdlinescr.clear()
-            self.cmdlinescr.addstr(cmdStr)
-            self.cmdlinescr.refresh()
-            c = chr(self.cmdlinescr.getch())
-        return cmdStr
 
     def getStateStr(self):
         if self.state == State.NORMAL:
@@ -313,17 +294,18 @@ class MainScr:
         self.filenavscr.move(y,0)
 
         for i in range(self.topDir, len(self.dirs)):
-            directory = self.dirs[i]
 
+            directory = self.dirs[i]
             # handle coloring
             color = SyntaxColors.FILE.value # assume everything is a file
             if os.path.isdir(directory):
                 color = SyntaxColors.FOLDER.value
 
-            self.filenavscr.addstr(directory,curses.color_pair(color))
-            y += 1
+            self.filenavscr.addstr('- '+directory,curses.color_pair(color))
+            y += len(directory)//(self.filenavscr.getmaxyx()[1]-1)+1
+
             if y > self.filenavscr.getmaxyx()[0]-1:
-                y -= 1
+                y -= len(directory)//self.editorscr.getmaxyx()[1]+1
                 self.filenavscr.move(y,0)
                 for c in range(self.filenavscr.getmaxyx()[1]-2):
                         self.filenavscr.addstr(' ')
@@ -335,20 +317,15 @@ class MainScr:
         self.filenavscr.move(oldY,oldX)
         self.filenavscr.refresh()
 
-    def getDirs(self):
-        dirs = ['..']+sorted(os.listdir())
-        i = 1
-        for directory in dirs[1:]:
-            if '.' == directory[0]:
-                dirs.pop(i)
-                i -= 1
-            i += 1
-        return dirs
-
     def runFileNavigation(self, breakEarly = False):
 
-        self.dirs = self.getDirs()
+        ### TEST
+        self.editorscr.clear()
+        self.editorscr.move(0,0)
+
+        self.dirs = editorUtil.getDirs(self)
         self.topDir = 0
+        self.currentDir = 0
         self.drawAndRefreshFileNavigation()
         self.filenavscr.move(0,0)
 
@@ -367,23 +344,37 @@ class MainScr:
                 break
 
             if c == 'k':
-                y -= 1
+                y -= (len(self.dirs[self.currentDir-1]))//(self.filenavscr.getmaxyx()[1])+1
+                # remember you have ' -' at the start of every dir
                 if y < 0:
-                    y += 1
-
-            if c == 'j':
-                y += 1
-                if y > len(self.dirs)-1  or y > self.filenavscr.getmaxyx()[0]-2:
-                    if y > self.filenavscr.getmaxyx()[0]-2:
+                    self.topDir -= 1
+                    if self.topDir < 0:
                         self.topDir += 1
-                    y -= 1
+                        self.currentDir += 1
+                    y += (len(self.dirs[self.currentDir-1]))//(self.filenavscr.getmaxyx()[1])+1
+                self.currentDir -= 1
 
-            if c == '\n':
+            elif c == 'j':
+                y += (len(self.dirs[self.currentDir]))//(self.filenavscr.getmaxyx()[1])+1
+                if self.currentDir + 1 == len(self.dirs):
+                    y -= (len(self.dirs[self.currentDir])+1)//(self.filenavscr.getmaxyx()[1])+1
+                    continue
+                if y > self.filenavscr.getmaxyx()[0]-2:
+                    y -= len(self.dirs[self.currentDir])//(self.filenavscr.getmaxyx()[1])+1
+                    self.topDir += 1
+
+                self.currentDir += 1
+
+
+            elif c == '\n':
                 try:
-                    os.chdir(self.dirs[self.topDir+y])
-                    self.dirs = self.getDirs()
+                    os.chdir(self.dirs[self.currentDir])
+                    self.dirs = editorUtil.getDirs(self)
+                    self.currentDir = 0
+                    self.topDir = 0
+
                 except:
-                    self.fileName = self.dirs[self.topDir+y]
+                    self.fileName = self.dirs[self.currentDir]
                     self.lineLinkedList = fileUtil.loadFile(self.fileName)
                     self.topLine = self.currentLine = self.lineLinkedList.start
                     self.currentLineIndex = 0
@@ -393,6 +384,12 @@ class MainScr:
 
             self.drawAndRefreshFileNavigation()
             self.filenavscr.move(y,0)
+
+            # TEST
+            self.editorscr.clear()
+            self.editorscr.addstr(str(self.currentDir)+'\n')
+            self.editorscr.addstr(self.dirs[self.currentDir])
+            self.editorscr.refresh()
 
     def run(self):
         """
@@ -491,7 +488,6 @@ class MainScr:
                         if self.currentLine.lastNode == None:
                             self.currentLineIndex = 0
                             continue
-                        #self.currentLine = self.currentLine.lastNode
                         self.moveUp(y,x)
                         editorUtil.moveToEndOfLine(self)
                         self.drawLines()
@@ -608,7 +604,7 @@ class MainScr:
 
             elif self.state == State.COMMAND_LINE:
                 # what about if user presses escape?
-                cmd = self.getCmd()
+                cmd = editorUtil.getCmd(self)
                 if cmd == chr(27): # escape character
                     self.state = State.NORMAL
                     continue

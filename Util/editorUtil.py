@@ -1,10 +1,12 @@
+import os
+
 from dataStructures.lineNode import LineNode
 
 def currentLineHeight(editorObj):
     """
     Returns the height of the current line
     """
-    return editorObj.lineHeight(self.currentLine)
+    return editorObj.lineHeight(editorObj.currentLine)
 
 def lineHeight(editorObj, lineNode):
     """
@@ -27,7 +29,7 @@ def moveToEndOfLine(editorObj):
 def moveToBeginningOfLine(editorObj):
     editorObj.currentLineIndex = 0
 
-def deleteLine(self,lineNode):
+def deleteLine(editorObj,lineNode):
     """
     Deletion looks like this:
     ... -> lineNode.lastNode -> lineNode -> lineNode.nextNode -> ...
@@ -35,7 +37,7 @@ def deleteLine(self,lineNode):
     ... -> lineNode.lastNode -> lineNode.nextNode -> ...
     """
 
-    self.currentLineIndex = len(lineNode.lastNode.value)-1
+    editorObj.currentLineIndex = len(lineNode.lastNode.value)-1
     lineNode.lastNode.value = lineNode.lastNode.value[:-1]+lineNode.value[:-1]+'\n'
     lineNode.lastNode.colors = lineNode.lastNode.colors[:-1]+lineNode.colors
     lineNode.lastNode.nextNode = lineNode.nextNode
@@ -44,19 +46,19 @@ def deleteLine(self,lineNode):
         lineNode.nextNode.lastNode = lineNode.lastNode
     returnNode = lineNode.lastNode
     del lineNode
-    self.lineLinkedList.length -= 1
+    editorObj.lineLinkedList.length -= 1
     return returnNode
 
-def insertLine(self,lineNode):
+def insertLine(editorObj,lineNode):
     """
     Inserts a line just like how vim does
     ... -> lineNode.lastNode -> lineNode -> lineNode.nextNode -> ...
     ... -> lineNode.lastNode -> lineNode -> newNode -> lineNode.nextNode -> ...
     """
 
-    newLineValue = self.currentLine.value[self.currentLineIndex:]
-    self.currentLine.value = self.currentLine.value[:self.currentLineIndex]+'\n'
-    newNode = LineNode(newLineValue,self.currentLine)
+    newLineValue = editorObj.currentLine.value[editorObj.currentLineIndex:]
+    editorObj.currentLine.value = editorObj.currentLine.value[:editorObj.currentLineIndex]+'\n'
+    newNode = LineNode(newLineValue,editorObj.currentLine)
 
     temp = lineNode.nextNode # save it for later
     lineNode.nextNode = newNode
@@ -64,9 +66,40 @@ def insertLine(self,lineNode):
     if temp != None:
         temp.lastNode = newNode
 
-    self.lineLinkedList.length += 1
+    editorObj.lineLinkedList.length += 1
 
-    self.drawLines()
+    editorObj.drawLines()
 
     return newNode
+
+def getCmd(editorObj):
+    """
+    Get command from user when in command mode
+    """
+    cmdStr = ':'
+    c = ''
+    while c != '\n':
+        if c == chr(127): # backspace
+            cmdStr = cmdStr[:-1]
+        elif c == chr(27): # escape
+            return chr(27)
+        else:
+            cmdStr += c
+
+        editorObj.cmdlinescr.clear()
+        editorObj.cmdlinescr.addstr(cmdStr)
+        editorObj.cmdlinescr.refresh()
+        c = chr(editorObj.cmdlinescr.getch())
+    return cmdStr
+
+def getDirs(self):
+    dirs = ['..']+sorted(os.listdir())
+    i = 1
+    for directory in dirs[1:]:
+        if '.' == directory[0]:
+            dirs.pop(i)
+            i -= 1
+        i += 1
+    return dirs
+
 
