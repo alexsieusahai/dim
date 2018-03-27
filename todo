@@ -1,12 +1,13 @@
 Must do:
 
-Important!
-    Refactor drawLines so you can use it for filenavscr aswell
-
-Implement file navigator
+Implement fast file searching using binary search (O(logn) vs O(n) for naive)
+Implement substring matching (searching feature) in file using KMP for O(n)
+Implement a 'rope' data structure for fast insertion into a line (O(1) instead of O(n))
+Refactor jumps so it's a lot faster
 Implement `x` deletion
 Implement `dd` deletion
-Implement `u` undo and `ctrl+r` redo
+Implement deletion buffer
+Implement `u` undo and `ctrl+r` redo (with buffers)
 
 Can do this one whenever, 0 thought required
     - Switch to a more pastel color scheme
@@ -65,3 +66,5 @@ Stuff to mention during 275 presentation:
 
     Implemented Syntax Highlighting using `pygments`
         - Used a colors array for each line, kept control of it really similar to the text itself
+    
+    Talk a little bit about how you structured the file system to keep things cleanish

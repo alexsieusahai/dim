@@ -11,11 +11,12 @@ import pygments
 
 from dataStructures.lineLinkedList import LineLinkedList
 from dataStructures.lineNode import LineNode
-from initCurses import initColors, initScreens
+from Util.initCurses import initColors, initScreens
 from constants import State, NormalState, SyntaxColors, Colors, WindowConstants
 import Util.fileUtil as fileUtil
 import Util.editorUtil as editorUtil
 import Util.cursesUtil as cursesUtil
+import Util.syntaxHighlighting as syntaxHighlighting
 
 class MainScr:
 
@@ -52,8 +53,6 @@ class MainScr:
         # setting ui up
         self.editorscr.move(0,0)
         self.currentLineCount = 0
-
-
 
         # set up something bright for statusscr
         self.statusscr.bkgd(' ', curses.color_pair(SyntaxColors.STATUS.value))
@@ -146,11 +145,6 @@ class MainScr:
             self.editorscr.move(cursorY+1,0)
             cursorY += 1
             lineToDraw = lineToDraw.nextNode
-
-        # testing
-        #self.filenavscr.clear()
-        #self.filenavscr.addstr(str((self.currentLineIndex,self.getCurrentChar())))
-        #self.filenavscr.refresh()
 
         # move cursor to where it should be as specified by currentLine and currentLineIndex, refresh and move on
         self.editorscr.move(moveY,moveX)
@@ -258,7 +252,7 @@ class MainScr:
             if self.currentLine.value[self.currentLineIndex+1] != '\n':
                 self.currentLineIndex += 1
 
-    def outputChatter(self,process):
+    def outputTerminalChatter(self,process):
         """
         Output whatever process sends to stdout in real time
         """
@@ -309,56 +303,7 @@ class MainScr:
         self.editorscr.refresh()
 
 
-    def setUpSyntaxHighlighting(self):
-        pylex = Python3Lexer()
-        # lets build the string to parse
-        syntax = ''
-        walk = self.lineLinkedList.start
-        while walk != None:
-            syntax += walk.value
-            walk = walk.nextNode
-
-        walk = self.lineLinkedList.start
-
-        i = 0 # index of where i am walking through the string
-
-        for token in pylex.get_tokens(syntax):
-
-            if token[1] == '\n':
-                walk = walk.nextNode
-                i = -1
-                if walk == None:
-                    break
-
-            tokenType = SyntaxColors.TEXT.value # assume everything is text and find contradiction
-
-            if pygments.token.Comment.Single == token[0]:
-                tokenType = SyntaxColors.COMMENT.value
-
-            if pygments.token.Keyword.Namespace == token[0]:
-                tokenType = SyntaxColors.NAMESPACE.value
-
-            if pygments.token.Keyword == token[0]:
-                tokenType = SyntaxColors.KEYWORD.value
-
-            if pygments.token.Name.Builtin == token[0]:
-                tokenType = SyntaxColors.BUILTIN.value
-
-            if pygments.token.Name.Function == token[0]:
-                tokenType = SyntaxColors.FUNCTION.value
-
-            if pygments.token.Literal.Number.Integer == token[0] or pygments.token.Literal.Number.Float == token[0]:
-                tokenType = SyntaxColors.LITERAL.value
-
-            if pygments.token.Operator == token[0]:
-                tokenType = SyntaxColors.OPERATOR.value
-
-            if pygments.token.Literal.String.Single == token[0]:
-                tokenType = SyntaxColors.STRING_LITERAL.value
-
-            for c in token[1]:
-                walk.colors[i] = tokenType
-                i += 1
+    
 
     def drawAndRefreshFileNavigation(self):
 
@@ -397,7 +342,7 @@ class MainScr:
         i = 1
         for directory in dirs[1:]:
             if '.' == directory[0]:
-                dirs.append(dirs.pop(i))
+                dirs.pop(i)
                 i -= 1
             i += 1
         return dirs
@@ -444,7 +389,7 @@ class MainScr:
                     self.lineLinkedList = fileUtil.loadFile(self.fileName)
                     self.topLine = self.currentLine = self.lineLinkedList.start
                     self.currentLineIndex = 0
-                    self.setUpSyntaxHighlighting()
+                    syntaxHighligthing.setColors(self)
                     self.drawLines()
                 y = 0
 
@@ -458,7 +403,7 @@ class MainScr:
         """
         while True:
 
-            self.setUpSyntaxHighlighting()
+            syntaxHighlighting.setColors(self)
 
             self.drawStatus() # draw the status bar text on status bar
             self.drawLines()
@@ -695,7 +640,7 @@ class MainScr:
 
                             process = subprocess.Popen(cmd.split(),stdout=subprocess.PIPE)
 
-                            self.outputChatter(process)
+                            self.outputTerminalChatter(process)
 
                             # bring what we killed back to life
                             cursesUtil.birth()
