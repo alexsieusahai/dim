@@ -2,6 +2,8 @@ import pygments
 from pygments.lexers import Python3Lexer
 from constants import SyntaxColors, Colors
 
+from Util.cursesUtil import kill
+
 def setColors(editorObj):
         pylex = Python3Lexer()
         # lets build the string to parse
@@ -46,8 +48,9 @@ def setColors(editorObj):
             if pygments.token.Operator == token[0]:
                 tokenType = SyntaxColors.OPERATOR.value
 
-            if pygments.token.Literal.String.Single == token[0]:
+            if pygments.token.Literal.String.Single == token[0] or pygments.token.Literal.String.Double == token[0]:
                 tokenType = SyntaxColors.STRING_LITERAL.value
+
 
             for c in token[1]:
                 walk.colors[i] = tokenType

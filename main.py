@@ -41,8 +41,6 @@ class MainScr:
         self.drawAndRefreshFileNavigation()
 
         # grabbing the lines from the file
-        self.fileName = 'a.cpp'
-        self.fileName = 'index.html'
         self.fileName = 'test.py'
         self.lineLinkedList = fileUtil.loadFile(self.fileName)
 
@@ -389,13 +387,12 @@ class MainScr:
                     self.lineLinkedList = fileUtil.loadFile(self.fileName)
                     self.topLine = self.currentLine = self.lineLinkedList.start
                     self.currentLineIndex = 0
-                    syntaxHighligthing.setColors(self)
+                    syntaxHighlighting.setColors(self)
                     self.drawLines()
                 y = 0
 
             self.drawAndRefreshFileNavigation()
             self.filenavscr.move(y,0)
-
 
     def run(self):
         """
