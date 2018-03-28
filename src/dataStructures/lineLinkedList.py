@@ -19,6 +19,19 @@ class LineLinkedList: # doubly linked list for storing lines
             self.length += 1
         self.end = lastNode
 
+    def toList(self):
+        """
+        takes its own linked list and constructs a list based off of it
+        """
+        walk = self.start
+        alist = []
+
+        while walk is not None:
+            alist.append(walk.value)
+            walk = walk.nextNode
+
+        return alist
+
 if __name__ == '__main__':
     ll = LineLinkedList([x for x in 'dog'])
     walkNode = ll.start

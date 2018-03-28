@@ -63,7 +63,8 @@ class MainScr:
         self.topLineCount = 1  # number to draw for topLine
         self.currentLineIndex = 0
 
-        self.drawLines()
+        self.drawLines(self.editorscr, self.topLine)
+        self.drawLineNumbers()
         self.state = State.NORMAL
 
         # set up punctuation dictionary for fast checking of punctuation
@@ -80,20 +81,12 @@ class MainScr:
         self.stdscr.keypad(False)
         curses.endwin()
 
-    def drawLines(self):
-        """
-        Takes in a scr object from which it draws on
+    def drawLineNumbers(self):
 
-        Draws the line numbers and the lines themselves onto the ui
-        O(n) where n is the number of blocks that can fit onto the terminal,
-        but since n is very small and theta(n) is a fraction of
-        n usually < n/2 this is fine.
-        """
-        # clear the old data off of the screen
+        # clear old data off the screen
         self.linenumscr.clear()
-        self.editorscr.clear()
 
-        (moveY, moveX) = (0, 0)  # to move after
+        (moveY, moveX) = (0, 0)
 
         # draw line numbers
         lineToDraw = self.topLine
@@ -113,7 +106,7 @@ class MainScr:
                 if moveX <= -1:
                     moveX = 0
 
-            y += editorUtil.lineHeight(self, lineToDraw)
+            y += editorUtil.lineHeight(self.editorscr, lineToDraw)
 
             if lineToDraw.nextNode is None:  # ran out of nodes
                 break
@@ -124,39 +117,52 @@ class MainScr:
                 break
             self.linenumscr.move(y, 0)
 
+        self.editorscr.move(moveY, moveX)
+
+    def drawLines(self,scr,topLine):
+        """
+        Takes in a scr object from which it draws on
+
+        Draws the line numbers and the lines themselves onto the ui
+        O(n) where n is the number of blocks that can fit onto the terminal,
+        but since n is very small and theta(n) is a fraction of
+        n usually < n/2 this is fine.
+        """
+        # clear the old data off of the screen
+        scr.clear()
+
         # draw the lines themselves
-        lineToDraw = self.topLine
-        self.editorscr.move(0, 0)
+        lineToDraw = topLine
+        scr.move(0, 0)
         cursorY = 0
 
         while lineToDraw is not None:
 
-            if self.editorscr.getyx()[0] + editorUtil.lineHeight(self, lineToDraw) > self.editorscr.getmaxyx()[0]-1:
+            if scr.getyx()[0] + editorUtil.lineHeight(self.editorscr, lineToDraw) > scr.getmaxyx()[0]-1:
                 # handle no space at bottom when scrolling up
-                self.editorscr.addstr('@')
+                scr.addstr('@')
                 break
             i = 0
             for c in lineToDraw.value:
                 colorToDraw = lineToDraw.colors[i]
-                self.editorscr.addstr(c, curses.color_pair(colorToDraw))
-                currentY = self.editorscr.getyx()[1]
-                if currentY+1 > self.editorscr.getmaxyx()[1]-1:
+                scr.addstr(c, curses.color_pair(colorToDraw))
+                currentX = scr.getyx()[1]
+                if currentX+1 > scr.getmaxyx()[1]-1:
                     # if we have reached the end of the line horizontally
                     cursorY += 1
-                    self.editorscr.move(cursorY, 0)
+                    scr.move(cursorY, 0)
                 i += 1
 
-            if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0]-1:
+            if scr.getyx()[0] + 1 > scr.getmaxyx()[0]-1:
                 break
-            self.editorscr.move(cursorY + 1, 0)
+            scr.move(cursorY + 1, 0)
             cursorY += 1
             lineToDraw = lineToDraw.nextNode
 
         # move cursor to where it should be as
         # specified by currentLine and currentLineIndex, refresh and move on
-        self.editorscr.move(moveY, moveX)
         self.linenumscr.refresh()
-        self.editorscr.refresh()
+        scr.refresh()
 
     def drawStatus(self):
         """
@@ -192,20 +198,21 @@ class MainScr:
         """
         if self.currentLine.nextNode is None:  # we don't have any more nodes
             return
-        currentLineHeight = editorUtil.currentLineHeight(self)
+        currentLineHeight = editorUtil.lineHeight(self.editorscr, self.currentLine)
         if y + currentLineHeight < self.editorscr.getmaxyx()[0]-2:
             self.currentLine = self.currentLine.nextNode
             if self.currentLineIndex > len(self.currentLine.value) - 2:
                 self.currentLineIndex = len(self.currentLine.value) - 2
-                self.drawLines()
+                self.drawLines(self.editorscr, self.topLine)
+                self.drawLineNumbers()
             if self.currentLineIndex < 0:
                 self.currentLineIndex = 0
 
         elif self.currentLine.nextNode is not None:
             self.currentLine = self.currentLine.nextNode
-            amountToMoveDown = editorUtil.lineHeight(self, self.currentLine)
+            amountToMoveDown = editorUtil.lineHeight(self.editorscr, self.currentLine)
             while amountToMoveDown > 0:
-                amountToMoveDown -= editorUtil.lineHeight(self, self.topLine)
+                amountToMoveDown -= editorUtil.lineHeight(self.editorscr, self.topLine)
                 self.topLine = self.topLine.nextNode
                 self.topLineCount += 1
 
@@ -216,7 +223,8 @@ class MainScr:
                 self.currentLineIndex = len(self.currentLine.value) - 2
                 if self.currentLineIndex < 0:
                     self.currentLineIndex = 0
-                self.drawLines()
+                self.drawLines(self.editorscr, self.topLine)
+                self.drawLineNumbers()
         elif self.currentLine.lastNode is not None:
             self.currentLine = self.currentLine.lastNode
             self.topLine = self.topLine.lastNode
@@ -270,7 +278,8 @@ class MainScr:
                 self.topLine = self.lineLinkedList.start
 
                 # draw the output
-                self.drawLines()
+                self.drawLines(self.editorscr, self.topLine)
+                self.drawLineNumbers()
                 self.editorscr.refresh()
 
         # kill the pipe
@@ -288,52 +297,31 @@ class MainScr:
         self.lineLinkedList = tempLinkedList
         self.topLine = tempPointer
 
-        self.drawLines()
+        self.drawLines(self.editorscr, self.topLine)
+        self.drawLineNumbers()
         self.editorscr.refresh()
+
+    def setUpFileHighlighting(self):
+        directory = self.dirs.start
+        while directory is not None:
+            color = SyntaxColors.FILE.value
+            if os.path.isdir(directory.value):
+                color = SyntaxColors.FOLDER.value
+            for i in range(len(directory.value)):
+                directory.colors[i] = color
+            directory = directory.nextNode
 
     def drawAndRefreshFileNavigation(self):
 
         self.filenavscr.clear()
 
-        # draw the directory
-        (oldY, oldX) = self.filenavscr.getyx()
-        y = 0
-        self.filenavscr.move(y, 0)
-
-        for i in range(self.topDir, len(self.dirs)):
-
-            directory = self.dirs[i]
-            # handle coloring
-            color = SyntaxColors.FILE.value  # assume everything is a file
-            if os.path.isdir(directory):
-                color = SyntaxColors.FOLDER.value
-
-            try:
-                self.filenavscr.addstr('- ' + directory,
-                                    curses.color_pair(color))
-            except curses.error:
-                continue
-
-            y += len(directory)//(self.filenavscr.getmaxyx()[1]-1)+1
-
-            if y > self.filenavscr.getmaxyx()[0]-1:
-                y -= len(directory)//self.editorscr.getmaxyx()[1]+1
-                self.filenavscr.move(y, 0)
-                for c in range(self.filenavscr.getmaxyx()[1]-2):
-                        self.filenavscr.addstr(' ')
-                self.filenavscr.move(y, 0)
-                self.filenavscr.addstr('...')
-                break
-            self.filenavscr.move(y, 0)
-
-        self.filenavscr.move(oldY, oldX)
-        self.filenavscr.refresh()
+        self.drawLines(self.filenavscr,self.topDir)
 
     def runFileNavigation(self, breakEarly=False):
 
-        self.dirs = editorUtil.getDirs(self)
-        self.topDir = 0
-        self.currentDir = 0
+        self.dirs = LineLinkedList(editorUtil.getDirs(self))
+        self.topDir = self.currentDir = self.dirs.start
+        self.setUpFileHighlighting()
         self.drawAndRefreshFileNavigation()
         self.filenavscr.move(0, 0)
 
@@ -352,64 +340,63 @@ class MainScr:
                 break
 
             if c == 'k':
-                y -= (len(self.dirs[self.currentDir-1]))//(self.filenavscr.getmaxyx()[1])+1
+                y -= editorUtil.lineHeight(self.filenavscr, self.currentDir.lastNode)
                 # remember you have ' -' at the start of every dir
                 if y < 0:
-                    self.topDir -= 1
-                    if self.topDir < 0:
-                        self.topDir += 1
-                        self.currentDir += 1
-                    y += (len(self.dirs[self.currentDir-1]))//(self.filenavscr.getmaxyx()[1])+1
-                self.currentDir -= 1
+                    temp = self.topDir
+                    self.topDir = self.topDir.lastNode
+                    if self.topDir is None:
+                        self.topDir = temp
+                        self.currentDir = self.currentDir.nextNode
+                    y += editorUtil.lineHeight(self.filenavscr, self.currentDir.lastNode)
+                if self.currentDir is not self.dirs.start:
+                    self.currentDir = self.currentDir.lastNode
 
             elif c == 'j':
-                y += (len(self.dirs[self.currentDir]))//(self.filenavscr.getmaxyx()[1])+1
-                if self.currentDir + 1 == len(self.dirs):
-                    y -= (len(self.dirs[self.currentDir])+1)//(self.filenavscr.getmaxyx()[1])+1
+                y += editorUtil.lineHeight(self.filenavscr, self.currentDir)
+
+                if self.currentDir.nextNode is None:
+                    # if we are at the end
+                    y -= editorUtil.lineHeight(self.filenavscr, self.currentDir)
                     continue
 
                 if y > self.filenavscr.getmaxyx()[0]-2:
-                    y -= len(self.dirs[self.currentDir])//(self.filenavscr.getmaxyx()[1])+1
-                    self.topDir += 1
+                    y -= editorUtil.lineHeight(self.filenavscr, self.currentDir)
+                    self.topDir = self.topDir.nextNode
 
-                self.currentDir += 1
+                if self.currentDir is not self.dirs.end:
+                    self.currentDir = self.currentDir.nextNode
 
             elif c == '\n':
                 try:
-                    os.chdir(self.dirs[self.currentDir])
-                    self.dirs = editorUtil.getDirs(self)
-                    self.currentDir = 0
-                    self.topDir = 0
+                    os.chdir(self.currentDir.value)
+                    self.dirs = LineLinkedList(editorUtil.getDirs(self))
+                    self.currentDir = self.topDir = self.dirs.start
+                    self.setUpFileHighlighting()
 
                 except NotADirectoryError:
                     # reload file and prep
-                    self.fileName = self.dirs[self.currentDir]
+                    self.fileName = self.currentDir.value
                     self.lineLinkedList = fileUtil.loadFile(self.fileName)
                     self.topLine = self.currentLine = self.lineLinkedList.start
                     self.currentLineIndex = 0
                     syntaxHighlighting.setColors(self)
-                    self.drawLines()
+                    self.drawLines(self.editorscr, self.topLine)
+                    self.drawLineNumbers()
 
                     # reset file dir
-                    self.currentDir = 0
-                    self.topDir = 0
+                    self.currentDir = self.topDir = self.dirs.start
                 y = 0
 
             elif c == '?':
                 searchSubStr = editorUtil.getCmd(self, getSearch=True)[1:]
                 searchSubStr = searchSubStr.lstrip()
-                if searchSubStr == chr(27):
+                if searchSubStr == chr(27):  # escape character
                     continue
                 else:
-                    self.currentDir = dirBinSearch(self.dirs,
+                    self.currentDir = dirBinSearch(self.dirs.toList(),
                                         searchSubStr, self.currentDir)
-                    currDir = self.currentDir
-                    self.topDir = currDir - currDir % self.filenavscr.getmaxyx()[0]
-                    y = 0
-                    walk = self.topDir
-                    while walk != self.currentDir:
-                        y += len(self.dirs[walk])//(self.filenavscr.getmaxyx()[1])+1
-                        walk += 1
+                    self.topDir = self.currentDir
 
             self.drawAndRefreshFileNavigation()
             self.filenavscr.move(y, 0)
@@ -423,7 +410,8 @@ class MainScr:
             syntaxHighlighting.setColors(self)
 
             self.drawStatus()  # draw the status bar text on status bar
-            self.drawLines()
+            self.drawLines(self.editorscr, self.topLine)
+            self.drawLineNumbers()
             (y, x) = self.editorscr.getyx()  # get cursor position relative to top left
             if self.state == State.NORMAL:
                 c = chr(self.editorscr.getch())  # get a key
@@ -459,7 +447,8 @@ class MainScr:
                     while True:
 
                         self.moveRight(y, x)
-                        self.drawLines()
+                        self.drawLines(self.editorscr, self.topLine)
+                        self.drawLineNumbers()
                         c = editorUtil.getCurrentChar(self)
 
                         if c in self.punctuationChars:
@@ -469,14 +458,16 @@ class MainScr:
                             break
                             self.moveDown(y, 0)
                             self.currentLineIndex = 0
-                            self.drawLines()
+                            self.drawLines(self.editorscr, self.topLine)
+                            self.drawLineNumbers()
                             c = editorUtil.getCurrentChar(self)
                             break
 
                         if c == ' ':
                             while c == ' ':
                                 self.moveRight(y, x)
-                                self.drawLines()
+                                self.drawLines(self.editorscr, self.topLine)
+                                self.drawLineNumbers()
                                 c = editorUtil.getCurrentChar(self)
                                 if editorUtil.getNextChar(self) == '\n':
                                     break
@@ -496,7 +487,8 @@ class MainScr:
                             self.moveRight(y, x)
                         while editorUtil.getNextChar(self) in string.ascii_letters:
                             self.moveRight(y, x)
-                        self.drawLines()
+                        self.drawLines(self.editorscr, self.topLine)
+                        self.drawLineNumbers()
 
                         break
 
@@ -515,7 +507,8 @@ class MainScr:
                             continue
                         self.moveUp(y, x)
                         editorUtil.moveToEndOfLine(self)
-                        self.drawLines()
+                        self.drawLines(self.editorscr, self.topLine)
+                        self.drawLineNumbers()
                         self.currentLineIndex = 0
 
                     if len(self.currentLine.value) <= 2:
@@ -527,7 +520,8 @@ class MainScr:
 
                     while c == ' ':
                         self.moveLeft(y, x)
-                        self.drawLines()
+                        self.drawLines(self.editorscr, self.topLine)
+                        self.drawLineNumbers()
                         c = editorUtil.getCurrentChar(self)
                         if c in self.punctuationChars:
                             moveForward = False
@@ -537,13 +531,16 @@ class MainScr:
                                 moveForward = False
                                 break
                             self.moveUp(y, x)
-                            self.drawLines()
+                            self.drawLines(self.editorscr, self.topLine)
+                            self.drawLineNumbers()
                             editorUtil.moveToEndOfLine(self)
-                            self.drawLines()
+                            self.drawLines(self.editorscr, self.topLine)
+                            self.drawLineNumbers()
 
                     while c in string.ascii_letters or c in string.digits:
                         self.moveLeft(y, x)
-                        self.drawLines()
+                        self.drawLines(self.editorscr, self.topLine)
+                        self.drawLineNumbers()
                         c = editorUtil.getCurrentChar(self)
                         if c in self.punctuationChars:
                             moveForward = False
@@ -557,7 +554,8 @@ class MainScr:
 
                     if moveForward:
                         self.moveRight(y, x)
-                        self.drawLines()
+                        self.drawLines(self.editorscr, self.topLine)
+                        self.drawLineNumbers()
 
                 # move to different states
                 elif c == 'i':
@@ -569,7 +567,8 @@ class MainScr:
                         self.currentLine.colors.append(0)
                         # insert a space
                     self.moveRight(y, x)
-                    self.drawLines()
+                    self.drawLines(self.editorscr, self.topLine)
+                    self.drawLineNumbers()
                     self.state = State.INSERT
 
                 elif c == 'A':
@@ -579,7 +578,8 @@ class MainScr:
                         self.currentLine.colors.append(0)
                         # insert a space
                     self.moveRight(y, x)
-                    self.drawLines()
+                    self.drawLines(self.editorscr, self.topLine)
+                    self.drawLineNumbers()
                     self.state = State.INSERT
 
                 elif c == 'v':
@@ -614,19 +614,22 @@ class MainScr:
                     if self.currentLineIndex == -1:
                         # delete the line
                         self.currentLine = editorUtil.deleteLine(self, self.currentLine)
-                        self.drawLines()
+                        self.drawLines(self.editorscr, self.topLine)
+                        self.drawLineNumbers()
 
                 elif ord(c) == 10:   # enter
                     self.currentLine = editorUtil.insertLine(self, self.currentLine)
                     editorUtil.moveToBeginningOfLine(self)
-                    self.drawLines()
+                    self.drawLines(self.editorscr, self.topLine)
+                    self.drawLineNumbers()
 
                 else:  # any other character
                     self.currentLine.value = (self.currentLine.value[:self.currentLineIndex] +
                             c + self.currentLine.value[self.currentLineIndex:])
                     self.currentLineIndex += 1
                     self.currentLine.colors.append(0)
-                    self.drawLines()
+                    self.drawLines(self.editorscr, self.topLine)
+                    self.drawLineNumbers()
 
             elif self.state == State.VISUAL:
                 self.state = State.NORMAL

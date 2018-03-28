@@ -2,17 +2,13 @@ import os
 
 from dataStructures.lineNode import LineNode
 
-def currentLineHeight(editorObj):
-    """
-    Returns the height of the current line
-    """
-    return lineHeight(editorObj, editorObj.currentLine)
-
-def lineHeight(editorObj, lineNode):
+def lineHeight(scr, lineNode):
     """
     Returns the "height" (how many rows it takes up) of lineNode object passed in
     """
-    manyLines = len(lineNode.value)//editorObj.editorscr.getmaxyx()[1]+1
+    if lineNode is None:
+        return 0
+    manyLines = (len(lineNode.value)+1)//scr.getmaxyx()[1]+1
     return manyLines if manyLines else 1
 
 def getCurrentChar(editorObj):
@@ -68,7 +64,7 @@ def insertLine(editorObj,lineNode):
 
     editorObj.lineLinkedList.length += 1
 
-    editorObj.drawLines()
+    editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
 
     return newNode
 

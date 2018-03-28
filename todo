@@ -1,7 +1,6 @@
 Should do (in order probably):
 
 Subclass curses mainscr so you can store your topline, currentline, etc attributes within the object to make it more oop like and way easier to debug
-Refactor drawlines so it uses the scr that's passed in as an argument, so you can use drawlines for filenavscr and editorscr (only have to debug one)
 
 Implement randomized quicksort for the dir strings with comparison operator that compares the lowercase value of both strings
 Implement substring matching (searching feature) in file using KMP for O(n)
@@ -75,6 +74,8 @@ IMPORTANT
 ******
 
 Stuff to mention during 275 presentation:
+
+    Mostly held to PEP8 standard
     
     Used a linked list to represent all of the lines
 	- makes insertion and deletion O(1) intead of O(n)
@@ -82,6 +83,7 @@ Stuff to mention during 275 presentation:
 
     Talk about usage of abstraction to make implementing features and changing implementations of existing features relatively painless
 	- learned about importance throughout project, came to appreciate it when I had to change line storage from list to linked list to make inserting and deleting lines very fast (was very easy refactor)
+    - used heavily for drawLines(), refactored it so I could use it for filenavscr and editorscr
 
     Talk about `subprocess`, `subprocess.Popen`, etc
         - Bang! implementation; pipe handling
