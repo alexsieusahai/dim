@@ -5,6 +5,8 @@ Subclass curses mainscr so you can store your topline, currentline, etc attribut
 Implement randomized quicksort for the dir strings with comparison operator that compares the lowercase value of both strings
 Implement substring matching (searching feature) in file using KMP for O(n)
 Implement a 'rope' data structure for fast insertion into a line (O(1) instead of O(n))
+	- Look into `Piece Table`
+	- Look into `Gap buffer`
 Refactor jumps ('w','e','b') so it's a lot faster
 Implement `x` deletion
 Implement `dd` deletion
