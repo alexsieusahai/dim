@@ -1,5 +1,8 @@
 Should do (in order probably):
 
+Subclass curses mainscr so you can store your topline, currentline, etc attributes within the object to make it more oop like and way easier to debug
+Refactor drawlines so it uses the scr that's passed in as an argument, so you can use drawlines for filenavscr and editorscr (only have to debug one)
+
 Implement substring matching (searching feature) in file using KMP for O(n)
 Implement a 'rope' data structure for fast insertion into a line (O(1) instead of O(n))
 Refactor jumps ('w','e','b') so it's a lot faster
@@ -24,9 +27,12 @@ Implement copy paste containers tied to each key (not in vim but would be super 
 Implement a buffer for cmd line commands
 Implement more cmd line controls (look at vim docs for ideas)
 
+************
 Bugs:
+************
 
-- Doesn't work on empty files 
+- Opening an empty file results in an error
+- Using a hack for drawing some of the lines, ignore until you refactor drawLines() by subclassing mainscr from curses and adding all the attributes
 
 
 *********************
