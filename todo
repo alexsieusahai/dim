@@ -34,8 +34,6 @@ Bugs:
 ************
 
 - Opening an empty file results in an error
-- Using a hack for drawing some of the lines, ignore until you refactor drawLines() by subclassing mainscr from curses and adding all the attributes
-
 
 *********************
 ONCE IT'S FINISHED
