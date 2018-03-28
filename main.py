@@ -633,6 +633,7 @@ class MainScr:
                         if cmdChar == 'w':
                             fileUtil.saveFile(self)
                         if cmdChar == 'q':
+                            cursesUtil.kill(self)
                             sys.exit(0)
                         if cmdChar == '!':
                             # clear the screens to prep
