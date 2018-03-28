@@ -398,7 +398,12 @@ class MainScr:
                 else:
                     self.currentDir = dirBinSearch(self.dirs, searchSubStr, self.currentDir)
                     self.topDir = self.currentDir - self.currentDir % self.filenavscr.getmaxyx()[0]
-                    y = self.currentDir - self.topDir
+                    y = 0
+                    walk = self.topDir
+                    while walk != self.currentDir:
+                        y += len(self.dirs[walk])//(self.filenavscr.getmaxyx()[1])+1
+                        walk += 1
+
 
             self.drawAndRefreshFileNavigation()
             self.filenavscr.move(y,0)
