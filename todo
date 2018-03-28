@@ -1,9 +1,5 @@
 Should do (in order probably):
 
-Implement fast file searching using binary search 
-    - See if the substring matches from beginning onwards, naive solution is fine I think since you're only doing it O(logn) ttimes 
-    - Implement highlighting attribute overall, will be useful for `VISUAL` mode
-
 Implement substring matching (searching feature) in file using KMP for O(n)
 Implement a 'rope' data structure for fast insertion into a line (O(1) instead of O(n))
 Refactor jumps ('w','e','b') so it's a lot faster
@@ -54,12 +50,16 @@ Spellcheck
 Real time automatic testing
     - Given input to stream in, output to check against, try every couple seconds (if prog will compile) and if it matches notify user (maybe add regex for a little flex)
 
+Implement minimap
+    - look at vim minimap plugin and see how it works
+
 Inertial Scrolling
     - have to make drawLines faster before doing this
 
 Implement night/day color schemes 
     - Need to refactor color scheming to make it easier in the future anyways
     - Maybe display `!` in all colors and let the user pick with some prompts?
+
 
 Konami Code easter egg
 
@@ -83,3 +83,5 @@ Stuff to mention during 275 presentation:
         - Used a colors array for each line, kept control of it really similar to the text itself
     
     Talk a little bit about how you structured the file system to keep things cleanish
+
+    Talk about binary search implementation for file navigation
