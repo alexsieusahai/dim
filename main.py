@@ -17,6 +17,7 @@ import Util.fileUtil as fileUtil
 import Util.editorUtil as editorUtil
 import Util.cursesUtil as cursesUtil
 import Util.syntaxHighlighting as syntaxHighlighting
+from algorithms.binSearch import dirBinSearch
 
 class MainScr:
 
@@ -301,7 +302,11 @@ class MainScr:
             if os.path.isdir(directory):
                 color = SyntaxColors.FOLDER.value
 
-            self.filenavscr.addstr('- '+directory,curses.color_pair(color))
+            try:
+                self.filenavscr.addstr('- '+directory,curses.color_pair(color))
+            except:
+                continue
+
             y += len(directory)//(self.filenavscr.getmaxyx()[1]-1)+1
 
             if y > self.filenavscr.getmaxyx()[0]-1:
@@ -319,9 +324,6 @@ class MainScr:
 
     def runFileNavigation(self, breakEarly = False):
 
-        ### TEST
-        self.editorscr.clear()
-        self.editorscr.move(0,0)
 
         self.dirs = editorUtil.getDirs(self)
         self.topDir = 0
@@ -359,6 +361,7 @@ class MainScr:
                 if self.currentDir + 1 == len(self.dirs):
                     y -= (len(self.dirs[self.currentDir])+1)//(self.filenavscr.getmaxyx()[1])+1
                     continue
+
                 if y > self.filenavscr.getmaxyx()[0]-2:
                     y -= len(self.dirs[self.currentDir])//(self.filenavscr.getmaxyx()[1])+1
                     self.topDir += 1
@@ -374,22 +377,31 @@ class MainScr:
                     self.topDir = 0
 
                 except:
+                    # reload file and prep
                     self.fileName = self.dirs[self.currentDir]
                     self.lineLinkedList = fileUtil.loadFile(self.fileName)
                     self.topLine = self.currentLine = self.lineLinkedList.start
                     self.currentLineIndex = 0
                     syntaxHighlighting.setColors(self)
                     self.drawLines()
+
+                    # reset file dir
+                    self.currentDir = 0
+                    self.topDir = 0
                 y = 0
+
+            elif c == '?':
+                searchSubStr = editorUtil.getCmd(self,getSearch = True)[1:]
+                searchSubStr = searchSubStr.lstrip()
+                if searchSubStr == chr(27):
+                    continue
+                else:
+                    self.currentDir = dirBinSearch(self.dirs, searchSubStr, self.currentDir)
+                    self.topDir = self.currentDir - self.currentDir % self.filenavscr.getmaxyx()[0]
+                    y = self.currentDir - self.topDir
 
             self.drawAndRefreshFileNavigation()
             self.filenavscr.move(y,0)
-
-            # TEST
-            self.editorscr.clear()
-            self.editorscr.addstr(str(self.currentDir)+'\n')
-            self.editorscr.addstr(self.dirs[self.currentDir])
-            self.editorscr.refresh()
 
     def run(self):
         """
