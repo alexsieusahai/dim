@@ -3,6 +3,7 @@ Should do (in order probably):
 Subclass curses mainscr so you can store your topline, currentline, etc attributes within the object to make it more oop like and way easier to debug
 Refactor drawlines so it uses the scr that's passed in as an argument, so you can use drawlines for filenavscr and editorscr (only have to debug one)
 
+Implement randomized quicksort for the dir strings with comparison operator that compares the lowercase value of both strings
 Implement substring matching (searching feature) in file using KMP for O(n)
 Implement a 'rope' data structure for fast insertion into a line (O(1) instead of O(n))
 Refactor jumps ('w','e','b') so it's a lot faster
