@@ -7,7 +7,7 @@ import curses  # drawing the editor
 
 from dataStructures.lineLinkedList import LineLinkedList
 from Util.initCurses import initColors, initScreens
-from constants import State, NormalState, SyntaxColors, Colors, WindowConstants
+from constants import State, SyntaxColors, Colors, WindowConstants
 import Util.fileUtil as fileUtil
 import Util.editorUtil as editorUtil
 import Util.cursesUtil as cursesUtil
@@ -38,6 +38,7 @@ class MainScr:
                 ' ', curses.color_pair(SyntaxColors.LINE_NUMBER.value)
                 )
 
+        self.setState(State.NORMAL)
         self.runFileNavigation(breakEarly=True)
         self.drawAndRefreshFileNavigation()
 
@@ -65,7 +66,7 @@ class MainScr:
 
         self.drawLines(self.editorscr, self.topLine)
         self.drawLineNumbers()
-        self.state = State.NORMAL
+        self.setState(State.NORMAL)
 
         # set up punctuation dictionary for fast checking of punctuation
         self.punctuationChars = {}
@@ -80,6 +81,17 @@ class MainScr:
         curses.nocbreak()
         self.stdscr.keypad(False)
         curses.endwin()
+
+    def setState(self, stateToSet):
+        try:
+            if self.state is State.NORMAL and stateToSet is State.APPEND:
+                self.appendLineNode = self.currentLine
+        except AttributeError:
+            self.state = stateToSet
+        if self.state is State.APPEND:
+            if self.appendLineNode.value[-2] == ' ':
+                self.appendLineNode.value = self.appendLineNode.value[:-2]+'\n'
+        self.state = stateToSet
 
     def drawLineNumbers(self):
 
@@ -319,7 +331,7 @@ class MainScr:
 
     def runFileNavigation(self, breakEarly=False):
 
-        self.dirs = LineLinkedList(editorUtil.getDirs(self))
+        self.dirs = LineLinkedList(editorUtil.getDirs())
         self.topDir = self.currentDir = self.dirs.start
         self.setUpFileHighlighting()
         self.drawAndRefreshFileNavigation()
@@ -330,13 +342,13 @@ class MainScr:
         while True:
 
             if breakEarly:
-                self.state = State.NORMAL
+                self.setState(State.NORMAL)
                 break
 
             c = chr(self.filenavscr.getch())
 
             if c == '`':
-                self.state = State.NORMAL
+                self.setState(State.NORMAL)
                 break
 
             if c == 'k':
@@ -370,7 +382,7 @@ class MainScr:
             elif c == '\n':
                 try:
                     os.chdir(self.currentDir.value)
-                    self.dirs = LineLinkedList(editorUtil.getDirs(self))
+                    self.dirs = LineLinkedList(editorUtil.getDirs())
                     self.currentDir = self.topDir = self.dirs.start
                     self.setUpFileHighlighting()
 
@@ -559,7 +571,7 @@ class MainScr:
 
                 # move to different states
                 elif c == 'i':
-                    self.state = State.INSERT
+                    self.setState(State.INSERT)
 
                 elif c == 'a':
                     if editorUtil.getNextChar(self) == '\n':
@@ -569,7 +581,7 @@ class MainScr:
                     self.moveRight(y, x)
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
-                    self.state = State.INSERT
+                    self.setState(State.APPEND)
 
                 elif c == 'A':
                     editorUtil.moveToEndOfLine(self)
@@ -580,29 +592,24 @@ class MainScr:
                     self.moveRight(y, x)
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
-                    self.state = State.INSERT
+                    self.setState(State.APPEND)
 
                 elif c == 'v':
-                    self.state = State.VISUAL
+                    self.setState(State.VISUAL)
 
                 elif c == ':':
-                    self.state = State.COMMAND_LINE
+                    self.setState(State.COMMAND_LINE)
 
                 elif c == '`':
-                    self.state = State.FILE_NAVIGATION
+                    self.setState(State.FILE_NAVIGATION)
 
-            if self.state == State.INSERT:
+            if self.state == State.INSERT or self.state == State.APPEND:
 
                 c = chr(self.editorscr.getch())
 
-                if ord(c) == 23:  # ctrl + w
-                    # save file
-                    # don't do it like this, use vim-like command
-                    fileUtil.saveFile(self)
-
                 if ord(c) == 27:  # escape
                     self.moveLeft(y, x)
-                    self.state = State.NORMAL
+                    self.setState(State.NORMAL)
 
                 elif ord(c) == 127:  # backspace
                     self.currentLine.value = (self.currentLine.value[:max(self.
@@ -632,13 +639,15 @@ class MainScr:
                     self.drawLineNumbers()
 
             elif self.state == State.VISUAL:
-                self.state = State.NORMAL
+                cursesUtil.kill(self)
+                raise NotImplementedError
 
             elif self.state == State.COMMAND_LINE:
                 # what about if user presses escape?
                 cmd = editorUtil.getCmd(self)
+
                 if cmd == chr(27):  # escape character
-                    self.state = State.NORMAL
+                    self.setState(State.NORMAL)
                     continue
                 cmd = cmd.strip(' \t\n\r')
                 # tokenize based on '|'
@@ -672,12 +681,10 @@ class MainScr:
                             cursesUtil.birth()
 
                 # set state to normal upon exit
-                self.state = State.NORMAL
+                self.setState(State.NORMAL)
 
             elif self.state == State.FILE_NAVIGATION:
                 self.runFileNavigation()
-
-
 
 if __name__ == "__main__":
     editor = MainScr()

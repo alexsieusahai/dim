@@ -6,11 +6,7 @@ class State(Enum):
     VISUAL = 2
     COMMAND_LINE = 3
     FILE_NAVIGATION = 4
-
-class NormalState(Enum):
-    MOVEMENT = 0
-    DELETE = 1
-    # what else do I need
+    APPEND = 5
 
 class SyntaxColors(Enum):
 

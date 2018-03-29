@@ -90,7 +90,7 @@ def getCmd(editorObj,getSearch=False):
         c = chr(editorObj.cmdlinescr.getch())
     return cmdStr
 
-def getDirs(self):
+def getDirs():
     dirs = ['..']+sorted(os.listdir())
     i = 1
     for directory in dirs[1:]:
@@ -99,5 +99,3 @@ def getDirs(self):
             i -= 1
         i += 1
     return dirs
-
-
