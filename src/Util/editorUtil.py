@@ -78,7 +78,12 @@ def insertLine(editorObj,lineNode):
 
     newLineValue = editorObj.currentLine.value[editorObj.currentLineIndex:]
     editorObj.currentLine.value = editorObj.currentLine.value[:editorObj.currentLineIndex]+'\n'
-    newNode = LineNode(newLineValue,editorObj.currentLine)
+    newNode = LineNode(newLineValue, editorObj.currentLine)
+    # lastNode of newNode is set to editorObj.currentLine
+
+    # check to see if it's at the bottom of the screen
+    if editorObj.editorscr.getyx()[0] + 1 > editorObj.editorscr.getmaxyx()[0] - 2:
+        editorObj.topLineCount += 1
 
     temp = lineNode.nextNode  # save it for later
     lineNode.nextNode = newNode

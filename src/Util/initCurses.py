@@ -43,7 +43,7 @@ def initScreens(editorObj,Constants):
         """
         This function initializes all the screens to be painted on
         """
-        
+
         editorObj.stdscr = curses.initscr()
         editorObj.editorscr = curses.newwin(
                 editorObj.stdscr.getmaxyx()[0]-2,

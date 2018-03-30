@@ -23,21 +23,21 @@ def moveDown(editorObj):
         while amountToMoveDown > 0:
             amountToMoveDown -= editorUtil.lineHeight(editorObj.editorscr, editorObj.topLine)
             editorObj.topLine = editorObj.topLine.nextNode
-            editorObj.topLineCount += 11
+            editorObj.topLineCount += 1
 
 def moveUp(editorObj):
-    if editorObj.editorscr.getyx()[0] > 0:
+    #if editorObj.editorscr.getyx()[0] > 0:
+    if editorObj.currentLine is not editorObj.topLine:
         editorObj.currentLine = editorObj.currentLine.lastNode
         if editorObj.currentLineIndex > len(editorObj.currentLine.value) - 2:
             editorObj.currentLineIndex = len(editorObj.currentLine.value) - 2
             if editorObj.currentLineIndex < 0:
                 editorObj.currentLineIndex = 0
-            editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
-            editorObj.drawLineNumbers()
     elif editorObj.currentLine.lastNode is not None:
         editorObj.currentLine = editorObj.currentLine.lastNode
         editorObj.topLine = editorObj.topLine.lastNode
         editorObj.topLineCount -= 1
+        editorObj.drawLineNumbers()
 
 def moveLeft(editorObj):
     if editorObj.editorscr.getyx()[1] > 0:
