@@ -56,7 +56,7 @@ def LLSort(sortable_LL):
 
 	def recurse(head):
 
-		if head == None:
+		if head == None or head.nextNode == None:
 			return head
 
 		mid1 = middle_node(head)
@@ -98,7 +98,6 @@ def LLSort(sortable_LL):
 
 
 	sorted_head = recurse(sortable_LL.start)
-	sorted_head = fix_previous_pointers(sorted_head)
 	sortable_LL.remake_list(sorted_head)
 
 if __name__ == "__main__":

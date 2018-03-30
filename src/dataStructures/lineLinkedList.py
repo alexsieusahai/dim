@@ -1,7 +1,19 @@
 from dataStructures.lineNode import LineNode
 
-class LineLinkedList: # doubly linked list for storing lines
+class LineLinkedList:
+    """
+    doubly linked list created with lineNode objects
+
+    each value contains a string (could contain other objects)
+    constructor takes in a list of values, usually strings, to creat the 
+    linked list
+    """
+
     def __init__(self,lineList):
+        """
+        lineList is a list object containing either objects
+        generally should be strings
+        """
         self.length = 0
         self.start = None
         self.end = None
@@ -18,6 +30,24 @@ class LineLinkedList: # doubly linked list for storing lines
             lastNode = node
             self.length += 1
         self.end = lastNode
+
+    def remake_list(self,headNode):
+        """
+        taking a head node, remakes the linked list object using it
+        """
+
+        # set our start to the new head node
+        self.start = headNode
+        self.length = 0
+        pointer_node = headNode
+
+        # go through the linked list from the head node
+        # thi is to get the size of the list, as well as find the very last list
+        while pointer_node != None:
+            pointer_node = pointer_node.nextNode
+            self.length += 1
+
+        self.end = pointer_node
 
     def toList(self):
         """
