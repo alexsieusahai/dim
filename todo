@@ -2,16 +2,13 @@
 MILESTONES:
 *****************
 
-THURSDAY EVENING TODO:
-	- Implement automatic tab spacing upon inserting a line (take the tab space from the last line)
-	- Look into `Piece Table` to make undo and redo seamless (read about it and try to understand it)
-	
 FRIDAY TODO:
 	- Implement KMP
 	- If `Piece Table` looks good, implement `Piece Table`
 		- Otherwise, implement `Rope` or `Gap Buffer`
-    - Move movement definitions for the editor into movement/editorMovement
-    - Move movement stuff out of editorUtil and into editorMovement
+        - Probably gonna implement rope
+	- Implement automatic tab spacing upon inserting a line (take the tab space from the last line)
+    - Implement deletion for `e` and `b`
 
 SATURDAY TODO:
 	- Get `dimtutor` set up and going
