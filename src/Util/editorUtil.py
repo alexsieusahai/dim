@@ -18,14 +18,25 @@ def getNextChar(editorObj):
     # note we are guaranteed to have this as we never get to newline char
     return editorObj.currentLine.value[editorObj.currentLineIndex+1]
 
-
 def moveToEndOfLine(editorObj):
     editorObj.currentLineIndex = len(editorObj.currentLine.value)-2
 
 def moveToBeginningOfLine(editorObj):
     editorObj.currentLineIndex = 0
 
-def deleteLine(editorObj,lineNode):
+def deleteCharacter(editorObj, lineNode, index):
+    """
+    Delete character in lineNode.value at index i
+    """
+    if index > len(lineNode.value)-2:  # ignore newline
+        if editorObj.currentLine.nextNode is None:
+            return
+        editorObj.currentLine = deleteLine(editorObj, lineNode).nextNode
+        editorObj.currentLineIndex = 0
+    else:
+        lineNode.value = lineNode.value[:index]+lineNode.value[index+1:]
+
+def deleteLine(editorObj, lineNode, trueDelete=False):
     """
     Deletion looks like this:
     ... -> lineNode.lastNode -> lineNode -> lineNode.nextNode -> ...
@@ -33,8 +44,16 @@ def deleteLine(editorObj,lineNode):
     ... -> lineNode.lastNode -> lineNode.nextNode -> ...
     """
 
-    editorObj.currentLineIndex = len(lineNode.lastNode.value)-1
-    lineNode.lastNode.value = lineNode.lastNode.value[:-1]+lineNode.value[:-1]+'\n'
+    # if it's the last line
+    if lineNode.nextNode is None:
+        return lineNode # don't delete
+
+    if trueDelete:
+        editorObj.currentLineIndex = 0
+        lineNode.lastNode.value = lineNode.lastNode.value
+    else:
+        editorObj.currentLineIndex = len(lineNode.lastNode.value)-1
+        lineNode.lastNode.value = lineNode.lastNode.value[:-1]+lineNode.value[:-1]+'\n'
     lineNode.lastNode.colors = lineNode.lastNode.colors[:-1]+lineNode.colors
     lineNode.lastNode.nextNode = lineNode.nextNode
     # handle edge case
@@ -43,6 +62,9 @@ def deleteLine(editorObj,lineNode):
     returnNode = lineNode.lastNode
     del lineNode
     editorObj.lineLinkedList.length -= 1
+
+    if trueDelete:
+        return returnNode.nextNode
     return returnNode
 
 def insertLine(editorObj,lineNode):
@@ -56,7 +78,7 @@ def insertLine(editorObj,lineNode):
     editorObj.currentLine.value = editorObj.currentLine.value[:editorObj.currentLineIndex]+'\n'
     newNode = LineNode(newLineValue,editorObj.currentLine)
 
-    temp = lineNode.nextNode # save it for later
+    temp = lineNode.nextNode  # save it for later
     lineNode.nextNode = newNode
     newNode.nextNode = temp
     if temp != None:

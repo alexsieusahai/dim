@@ -3,11 +3,6 @@ MILESTONES:
 *****************
 
 THURSDAY EVENING TODO:
-	- Implement `INSERT` substates, being `APPEND`
-	- Implement `NORMAL` substates, being `DELETE`
-	- Implement `x` deletion
-	- Implement `dd` deletion
-	- Implement line jumping (`75gg`)
 	- Implement automatic tab spacing upon inserting a line (take the tab space from the last line)
 	- Look into `Piece Table` to make undo and redo seamless (read about it and try to understand it)
 	
@@ -15,6 +10,8 @@ FRIDAY TODO:
 	- Implement KMP
 	- If `Piece Table` looks good, implement `Piece Table`
 		- Otherwise, implement `Rope` or `Gap Buffer`
+    - Move movement definitions for the editor into movement/editorMovement
+    - Move movement stuff out of editorUtil and into editorMovement
 
 SATURDAY TODO:
 	- Get `dimtutor` set up and going
@@ -75,6 +72,7 @@ TUESDAY TODO:
 IMPORTANT:
     - Make tests for all data structures and algorithms that run if that python script is running in main namespace 
 	- might have to do some refactoring with the imports for that
+    - file system movement is a mess, see if you can get rid of y and just use knowledge of which dir is the current dir to draw everything
 
 Can do this one whenever, 0 thought required
     - Switch to a more pastel color scheme
@@ -121,6 +119,8 @@ IMPORTANT
 Stuff to mention during 275 presentation:
 
     Held to PEP8 standard
+
+    Briefly describe the finite state machine design
     
     Used a linked list to represent all of the lines
 	- makes insertion and deletion O(1) intead of O(n)

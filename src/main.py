@@ -13,6 +13,8 @@ import Util.editorUtil as editorUtil
 import Util.cursesUtil as cursesUtil
 import Util.syntaxHighlighting as syntaxHighlighting
 from algorithms.binSearch import dirBinSearch
+import movement.fileNavMovement as fileNavMovement
+#import movement.editorMovement as editorMovement
 
 
 class MainScr:
@@ -67,6 +69,7 @@ class MainScr:
         self.drawLines(self.editorscr, self.topLine)
         self.drawLineNumbers()
         self.setState(State.NORMAL)
+        self.commandRepeats = ''
 
         # set up punctuation dictionary for fast checking of punctuation
         self.punctuationChars = {}
@@ -92,6 +95,25 @@ class MainScr:
             if self.appendLineNode.value[-2] == ' ':
                 self.appendLineNode.value = self.appendLineNode.value[:-2]+'\n'
         self.state = stateToSet
+
+    def getStateStr(self):
+        if self.state is State.NORMAL:
+            return 'NORMAL'
+        elif self.state is State.INSERT:
+            return 'INSERT'
+        elif self.state is State.VISUAL:
+            return 'VISUAL'
+        elif self.state is State.COMMAND_LINE:
+            return 'CMD_LINE'
+        elif self.state is State.FILE_NAVIGATION:
+            return 'FILE_NAV'
+        elif self.state is State.APPEND:
+            return 'APPEND'
+        else:
+            return 'UNKNOWN_STATE'
+
+    def getState(self):
+        return self.state
 
     def drawLineNumbers(self):
 
@@ -131,7 +153,7 @@ class MainScr:
 
         self.editorscr.move(moveY, moveX)
 
-    def drawLines(self,scr,topLine):
+    def drawLines(self, scr, topLine):
         """
         Takes in a scr object from which it draws on
 
@@ -190,19 +212,6 @@ class MainScr:
         self.statusscr.addstr(checkStr)
         self.statusscr.refresh()
 
-    def getStateStr(self):
-        if self.state == State.NORMAL:
-            return 'NORMAL'
-        elif self.state == State.INSERT:
-            return 'INSERT'
-        elif self.state == State.VISUAL:
-            return 'VISUAL'
-        elif self.state == State.COMMAND_LINE:
-            return 'CMD_LINE'
-        elif self.state == State.FILE_NAVIGATION:
-            return 'FILE_NAV'
-        else:
-            return 'UNKNOWN_STATE'
 
     def moveDown(self, y, x):
         """
@@ -326,8 +335,7 @@ class MainScr:
     def drawAndRefreshFileNavigation(self):
 
         self.filenavscr.clear()
-
-        self.drawLines(self.filenavscr,self.topDir)
+        self.drawLines(self.filenavscr, self.topDir)
 
     def runFileNavigation(self, breakEarly=False):
 
@@ -352,32 +360,10 @@ class MainScr:
                 break
 
             if c == 'k':
-                y -= editorUtil.lineHeight(self.filenavscr, self.currentDir.lastNode)
-                # remember you have ' -' at the start of every dir
-                if y < 0:
-                    temp = self.topDir
-                    self.topDir = self.topDir.lastNode
-                    if self.topDir is None:
-                        self.topDir = temp
-                        self.currentDir = self.currentDir.nextNode
-                    y += editorUtil.lineHeight(self.filenavscr, self.currentDir.lastNode)
-                if self.currentDir is not self.dirs.start:
-                    self.currentDir = self.currentDir.lastNode
+                y = fileNavMovement.moveUp(self, y)
 
             elif c == 'j':
-                y += editorUtil.lineHeight(self.filenavscr, self.currentDir)
-
-                if self.currentDir.nextNode is None:
-                    # if we are at the end
-                    y -= editorUtil.lineHeight(self.filenavscr, self.currentDir)
-                    continue
-
-                if y > self.filenavscr.getmaxyx()[0]-2:
-                    y -= editorUtil.lineHeight(self.filenavscr, self.currentDir)
-                    self.topDir = self.topDir.nextNode
-
-                if self.currentDir is not self.dirs.end:
-                    self.currentDir = self.currentDir.nextNode
+                y = fileNavMovement.moveDown(self, y)
 
             elif c == '\n':
                 try:
@@ -402,13 +388,20 @@ class MainScr:
 
             elif c == '?':
                 searchSubStr = editorUtil.getCmd(self, getSearch=True)[1:]
+                # want to take off the '?' character from the start
                 searchSubStr = searchSubStr.lstrip()
                 if searchSubStr == chr(27):  # escape character
                     continue
                 else:
-                    self.currentDir = dirBinSearch(self.dirs.toList(),
+                    wantedDir = dirBinSearch(self.dirs, self.dirs.toList(),
                                         searchSubStr, self.currentDir)
-                    self.topDir = self.currentDir
+                    if wantedDir is None:  # we couldn't find anything
+                        continue
+
+                    y = 0
+                    self.currentDir = self.topDir = self.dirs.start
+                    while self.currentDir != wantedDir:
+                        y = fileNavMovement.moveDown(self, y)
 
             self.drawAndRefreshFileNavigation()
             self.filenavscr.move(y, 0)
@@ -425,6 +418,7 @@ class MainScr:
             self.drawLines(self.editorscr, self.topLine)
             self.drawLineNumbers()
             (y, x) = self.editorscr.getyx()  # get cursor position relative to top left
+            repeats = 1 if self.commandRepeats == '' else int(self.commandRepeats)
             if self.state == State.NORMAL:
                 c = chr(self.editorscr.getch())  # get a key
 
@@ -441,6 +435,9 @@ class MainScr:
                 elif c == '$':  # eol
                     editorUtil.moveToEndOfLine(self)
                 elif c == '0':  # beginning
+                    if self.commandRepeats != '':
+                        self.commandRepeats += '0'
+                        continue
                     editorUtil.moveToBeginningOfLine(self)
 
                 elif c == 'w':
@@ -449,60 +446,74 @@ class MainScr:
                     either punctuation (where you stop) or spaces
                     (where you walk through until you hit something that isn't a space)
                     """
+                    for i in range(repeats):
 
-                    # handle edge case of `w` on '\n' line
-                    if self.currentLine.value == '\n' or editorUtil.getNextChar(self) == '\n':
-                        self.moveDown(y, x)
-                        self.currentLineIndex = 0
-                        continue
+                        # handle edge case of `w` on '\n' line
+                        if self.currentLine.value == '\n':
+                            if self.deleteMode is True:
+                                editorUtil.deleteCharacter(self, self.currentLine, x)
+                                self.drawLineNumbers()
+                            else:
+                                self.moveDown(y, x)
+                                self.currentLineIndex = 0
+                            continue
 
-                    while True:
+                        while True:
 
-                        self.moveRight(y, x)
-                        self.drawLines(self.editorscr, self.topLine)
-                        self.drawLineNumbers()
-                        c = editorUtil.getCurrentChar(self)
-
-                        if c in self.punctuationChars:
-                            break
-
-                        if editorUtil.getNextChar(self) == '\n':
-                            break
-                            self.moveDown(y, 0)
-                            self.currentLineIndex = 0
+                            if self.deleteMode is True:
+                                editorUtil.deleteCharacter(self, self.currentLine, x)
+                            else:
+                                self.moveRight(y, x)
                             self.drawLines(self.editorscr, self.topLine)
                             self.drawLineNumbers()
                             c = editorUtil.getCurrentChar(self)
-                            break
 
-                        if c == ' ':
-                            while c == ' ':
-                                self.moveRight(y, x)
-                                self.drawLines(self.editorscr, self.topLine)
-                                self.drawLineNumbers()
-                                c = editorUtil.getCurrentChar(self)
-                                if editorUtil.getNextChar(self) == '\n':
-                                    break
-                            break
+                            if c in self.punctuationChars:
+                                break
+
+                            if editorUtil.getCurrentChar(self) == '\n':
+                                if self.deleteMode is True:
+                                    editorUtil.deleteCharacter(self, self.currentLine, x)
+                                else:
+                                    self.moveDown(y, 0)
+                                    self.currentLineIndex = 0
+                                    self.drawLines(self.editorscr, self.topLine)
+                                    self.drawLineNumbers()
+                                break
+
+                            if c == ' ':
+                                while c == ' ':
+                                    if self.deleteMode is True:
+                                        editorUtil.deleteCharacter(self, self.currentLine, x)
+                                    else:
+                                        self.moveRight(y, x)
+                                    self.drawLines(self.editorscr, self.topLine)
+                                    self.drawLineNumbers()
+                                    c = editorUtil.getCurrentChar(self)
+                                    if editorUtil.getNextChar(self) == '\n':
+                                        break
+                                break
 
                 elif c == 'e':
-                    # handle edge case of `e` on '\n' line
-                    if self.currentLine.value == '\n' or editorUtil.getNextChar(self) == '\n':
-                        self.moveDown(y, x)
-                        self.currentLineIndex = 0
-                        continue
 
-                    self.moveRight(y, x)
+                    for i in range(repeats):
+                        # handle edge case of `e` on '\n' line
+                        if self.currentLine.value == '\n' or editorUtil.getNextChar(self) == '\n':
+                            self.moveDown(y, x)
+                            self.currentLineIndex = 0
+                            continue
 
-                    while True:
-                        while editorUtil.getNextChar(self) == ' ':
-                            self.moveRight(y, x)
-                        while editorUtil.getNextChar(self) in string.ascii_letters:
-                            self.moveRight(y, x)
-                        self.drawLines(self.editorscr, self.topLine)
-                        self.drawLineNumbers()
+                        self.moveRight(y, x)
 
-                        break
+                        while True:
+                            while editorUtil.getNextChar(self) == ' ':
+                                self.moveRight(y, x)
+                            while editorUtil.getNextChar(self) in string.ascii_letters:
+                                self.moveRight(y, x)
+                            self.drawLines(self.editorscr, self.topLine)
+                            self.drawLineNumbers()
+
+                            break
 
                 elif c == 'b':
                     """
@@ -510,66 +521,84 @@ class MainScr:
                     until the character before is punctuation or a space
                     """
 
-                    moveForward = True
-                    self.moveLeft(y, x)
-                    self.currentLineIndex -= 1
-                    if self.currentLineIndex < 0:
-                        if self.currentLine.lastNode is None:
-                            self.currentLineIndex = 0
-                            continue
-                        self.moveUp(y, x)
-                        editorUtil.moveToEndOfLine(self)
-                        self.drawLines(self.editorscr, self.topLine)
-                        self.drawLineNumbers()
-                        self.currentLineIndex = 0
+                    for i in range(repeats):
 
-                    if len(self.currentLine.value) <= 2:
-                        continue
-
-                    # now we are guaranteed a line
-                    # with at least two characters
-                    c = editorUtil.getCurrentChar(self)
-
-                    while c == ' ':
+                        moveForward = True
                         self.moveLeft(y, x)
-                        self.drawLines(self.editorscr, self.topLine)
-                        self.drawLineNumbers()
-                        c = editorUtil.getCurrentChar(self)
-                        if c in self.punctuationChars:
-                            moveForward = False
-                            break
-                        if self.editorscr.getyx()[1] == 0:
-                            if self.currentLine == 0:
-                                moveForward = False
-                                break
+                        self.currentLineIndex -= 1
+                        if self.currentLineIndex < 0:
+                            if self.currentLine.lastNode is None:
+                                self.currentLineIndex = 0
+                                continue
                             self.moveUp(y, x)
-                            self.drawLines(self.editorscr, self.topLine)
-                            self.drawLineNumbers()
                             editorUtil.moveToEndOfLine(self)
                             self.drawLines(self.editorscr, self.topLine)
                             self.drawLineNumbers()
-
-                    while c in string.ascii_letters or c in string.digits:
-                        self.moveLeft(y, x)
-                        self.drawLines(self.editorscr, self.topLine)
-                        self.drawLineNumbers()
-                        c = editorUtil.getCurrentChar(self)
-                        if c in self.punctuationChars:
-                            moveForward = False
-                            break
-                        if self.currentLineIndex == 0:
-                            moveForward = False
-                            break
-                        if self.currentLineIndex < 0:
                             self.currentLineIndex = 0
-                            break
 
-                    if moveForward:
-                        self.moveRight(y, x)
-                        self.drawLines(self.editorscr, self.topLine)
-                        self.drawLineNumbers()
+                        if len(self.currentLine.value) <= 2:
+                            continue
+
+                        # now we are guaranteed a line
+                        # with at least two characters
+                        c = editorUtil.getCurrentChar(self)
+
+                        while c == ' ':
+                            self.moveLeft(y, x)
+                            self.drawLines(self.editorscr, self.topLine)
+                            self.drawLineNumbers()
+                            c = editorUtil.getCurrentChar(self)
+                            if c in self.punctuationChars:
+                                moveForward = False
+                                break
+                            if self.editorscr.getyx()[1] == 0:
+                                if self.currentLine == 0:
+                                    moveForward = False
+                                    break
+                                self.moveUp(y, x)
+                                self.drawLines(self.editorscr, self.topLine)
+                                self.drawLineNumbers()
+                                editorUtil.moveToEndOfLine(self)
+                                self.drawLines(self.editorscr, self.topLine)
+                                self.drawLineNumbers()
+
+                        while c in string.ascii_letters or c in string.digits:
+                            self.moveLeft(y, x)
+                            self.drawLines(self.editorscr, self.topLine)
+                            self.drawLineNumbers()
+                            c = editorUtil.getCurrentChar(self)
+                            if c in self.punctuationChars:
+                                moveForward = False
+                                break
+                            if self.currentLineIndex == 0:
+                                moveForward = False
+                                break
+                            if self.currentLineIndex < 0:
+                                self.currentLineIndex = 0
+                                break
+
+                        if moveForward:
+                            self.moveRight(y, x)
+                            self.drawLines(self.editorscr, self.topLine)
+                            self.drawLineNumbers()
+
+                elif c == 'g':  # go to beginning of file
+                    self.currentLine = self.lineLinkedList.start
+                    for i in range(repeats-1):
+                        self.moveDown(y,x)
 
                 # move to different states
+                elif c == 'd':
+                    if self.deleteMode is True:  # equivalent to dd command
+                        self.currentLine = editorUtil.deleteLine(self, self.currentLine,
+                                                                        trueDelete=True)
+                    self.deleteMode = True
+                    continue
+
+                elif c in [str(x) for x in range(10)]:
+                    self.commandRepeats += str(c)
+                    continue
+
                 elif c == 'i':
                     self.setState(State.INSERT)
 
@@ -594,6 +623,12 @@ class MainScr:
                     self.drawLineNumbers()
                     self.setState(State.APPEND)
 
+                elif c == 'x':
+                    # delete character
+                    editorUtil.deleteCharacter(self, self.currentLine, self.currentLineIndex)
+                    self.drawLines(self.editorscr, self.topLine)
+                    self.drawLineNumbers()
+
                 elif c == 'v':
                     self.setState(State.VISUAL)
 
@@ -602,6 +637,9 @@ class MainScr:
 
                 elif c == '`':
                     self.setState(State.FILE_NAVIGATION)
+
+                self.deleteMode = False
+                self.commandRepeats = ''
 
             if self.state == State.INSERT or self.state == State.APPEND:
 
@@ -629,6 +667,7 @@ class MainScr:
                     editorUtil.moveToBeginningOfLine(self)
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
+
 
                 else:  # any other character
                     self.currentLine.value = (self.currentLine.value[:self.currentLineIndex] +
@@ -673,7 +712,7 @@ class MainScr:
                             if cmd[0] == '!':
                                 cmd = cmd[1:]
 
-                            process = subprocess.Popen(cmd.split(),stdout=subprocess.PIPE)
+                            process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 
                             self.outputTerminalChatter(process)
 
@@ -685,6 +724,7 @@ class MainScr:
 
             elif self.state == State.FILE_NAVIGATION:
                 self.runFileNavigation()
+
 
 if __name__ == "__main__":
     editor = MainScr()
