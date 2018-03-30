@@ -32,6 +32,11 @@ class LineLinkedList: # doubly linked list for storing lines
 
         return alist
 
+    def print_LL(self):
+
+        LL_as_list = self.toList()
+        print(LL_as_list)
+
 if __name__ == '__main__':
     ll = LineLinkedList([x for x in 'dog'])
     walkNode = ll.start
