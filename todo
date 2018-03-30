@@ -3,7 +3,7 @@ MILESTONES:
 *****************
 
 FRIDAY TODO:
-	- Implement KMP
+    - Implement searching using kmp
 	- If `Piece Table` looks good, implement `Piece Table`
 		- Otherwise, implement `Rope` or `Gap Buffer`
         - Probably gonna implement rope
@@ -17,6 +17,7 @@ SATURDAY TODO:
 	- Figure out a way to structure the themes so that they're easy to install and load
 	- Create theme creator interface, store results
 	- Create a `OPTIONS` state that lets you select theme (design it so that you can add onto it later)
+    - Write bin search for linked lists
 	
 SUNDAY TODO:
 	- Hackday @ se
