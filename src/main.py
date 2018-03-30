@@ -135,10 +135,18 @@ class MainScr:
 
             if lineToDraw == self.currentLine:
                 moveY = y + self.currentLineIndex//self.editorscr.getmaxyx()[1]
-                moveX = min(
-                        self.currentLineIndex % self.editorscr.getmaxyx()[1],
-                        len(self.currentLine.value)-2
-                        )  # avoid the newline char
+                # below solution doesn't work for tabs, but way faster
+                #moveX = min(
+                #        self.currentLineIndex % self.editorscr.getmaxyx()[1],
+                #        len(self.currentLine.value)-2
+                #        )  # avoid the newline char
+                for i in range(self.currentLineIndex):
+                    c = self.currentLine.value[i]
+                    moveX += 1
+                    if c == '\t':
+                        moveX += 3
+                    if moveX > self.editorscr.getmaxyx()[1]:
+                        moveX -= self.editorscr.getmaxyx()[1]
                 self.currentLineCount = lineIndex
                 if moveX <= -1:
                     moveX = 0
@@ -628,7 +636,6 @@ class MainScr:
                     editorUtil.moveToBeginningOfLine(self)
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
-
 
                 else:  # any other character
                     self.currentLine.value = (self.currentLine.value[:self.currentLineIndex] +

@@ -33,7 +33,7 @@ def LLSort(sortable_LL):
 		takes two halves of a linked list and merges them
 		each half is sorted
 		"""
-		
+
 		# base case 1 of the recursion
 		if nodeA == None:
 			return nodeB
@@ -77,7 +77,7 @@ def LLSort(sortable_LL):
 
 	def fix_previous_pointers(head):
 		"""
-		sorting algorithms ensures that each nextNode.value will be larger than the 
+		sorting algorithms ensures that each nextNode.value will be larger than the
 		current node.value
 
 		the previous pointers do not have the same guarentee (same as the unsorted list)
@@ -107,4 +107,5 @@ if __name__ == "__main__":
 
 	import linked list object
 	"""
+
 	pass
