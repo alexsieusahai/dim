@@ -35,6 +35,8 @@ def deleteCharacter(editorObj, lineNode, index):
         editorObj.currentLineIndex = 0
     else:
         lineNode.value = lineNode.value[:index]+lineNode.value[index+1:]
+        editorObj.currentLineIndex = min(editorObj.currentLineIndex,
+                                        len(lineNode.value))
 
 def deleteLine(editorObj, lineNode, trueDelete=False):
     """

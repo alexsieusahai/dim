@@ -14,7 +14,7 @@ import Util.cursesUtil as cursesUtil
 import Util.syntaxHighlighting as syntaxHighlighting
 from algorithms.binSearch import dirBinSearch
 import movement.fileNavMovement as fileNavMovement
-#import movement.editorMovement as editorMovement
+import movement.editorMovement as editorMovement
 
 
 class MainScr:
@@ -212,63 +212,6 @@ class MainScr:
         self.statusscr.addstr(checkStr)
         self.statusscr.refresh()
 
-
-    def moveDown(self, y, x):
-        """
-        Moves down one line
-        """
-        if self.currentLine.nextNode is None:  # we don't have any more nodes
-            return
-        currentLineHeight = editorUtil.lineHeight(self.editorscr, self.currentLine)
-        if y + currentLineHeight < self.editorscr.getmaxyx()[0]-2:
-            self.currentLine = self.currentLine.nextNode
-            if self.currentLineIndex > len(self.currentLine.value) - 2:
-                self.currentLineIndex = len(self.currentLine.value) - 2
-                self.drawLines(self.editorscr, self.topLine)
-                self.drawLineNumbers()
-            if self.currentLineIndex < 0:
-                self.currentLineIndex = 0
-
-        elif self.currentLine.nextNode is not None:
-            self.currentLine = self.currentLine.nextNode
-            amountToMoveDown = editorUtil.lineHeight(self.editorscr, self.currentLine)
-            while amountToMoveDown > 0:
-                amountToMoveDown -= editorUtil.lineHeight(self.editorscr, self.topLine)
-                self.topLine = self.topLine.nextNode
-                self.topLineCount += 1
-
-    def moveUp(self, y, x):
-        if y > 0:
-            self.currentLine = self.currentLine.lastNode
-            if self.currentLineIndex > len(self.currentLine.value) - 2:
-                self.currentLineIndex = len(self.currentLine.value) - 2
-                if self.currentLineIndex < 0:
-                    self.currentLineIndex = 0
-                self.drawLines(self.editorscr, self.topLine)
-                self.drawLineNumbers()
-        elif self.currentLine.lastNode is not None:
-            self.currentLine = self.currentLine.lastNode
-            self.topLine = self.topLine.lastNode
-            self.topLineCount -= 1
-
-    def moveLeft(self, y, x):
-        if self.editorscr.getyx()[1] > 0:
-            if self.currentLineIndex > len(self.currentLine.value)-2:
-                self.currentLineIndex = len(self.currentLine.value)-2
-            if self.currentLineIndex > 0:
-                self.currentLineIndex -= 1
-        else:
-            if self.currentLineIndex > 0:
-                self.currentLineIndex -= 1
-
-    def moveRight(self, y, x):
-        if self.currentLine.value != '\n':  # if it's only newline ignore
-            if self.currentLineIndex > len(self.currentLine.value) - 2:
-                self.currentLineIndex = len(self.currentLine.value) - 2
-
-            if self.currentLine.value[self.currentLineIndex+1] != '\n':
-                self.currentLineIndex += 1
-
     def outputTerminalChatter(self, process):
         """
         Output whatever process sends to stdout in real time
@@ -425,13 +368,13 @@ class MainScr:
                 # movement
                 # remember top left is (0,0)
                 if c == 'j':  # down
-                    self.moveDown(y, x)
+                    editorMovement.moveDown(self)
                 elif c == 'k':  # up
-                    self.moveUp(y, x)
+                    editorMovement.moveUp(self)
                 elif c == 'h':  # left
-                    self.moveLeft(y, x)
+                    editorMovement.moveLeft(self)
                 elif c == 'l':  # right
-                    self.moveRight(y, x)
+                    editorMovement.moveRight(self)
                 elif c == '$':  # eol
                     editorUtil.moveToEndOfLine(self)
                 elif c == '0':  # beginning
@@ -449,12 +392,20 @@ class MainScr:
                     for i in range(repeats):
 
                         # handle edge case of `w` on '\n' line
-                        if self.currentLine.value == '\n':
+                        if editorUtil.getCurrentChar(self) == '\n':
                             if self.deleteMode is True:
                                 editorUtil.deleteCharacter(self, self.currentLine, x)
                                 self.drawLineNumbers()
                             else:
-                                self.moveDown(y, x)
+                                editorMovement.moveDown(self)
+                                self.currentLineIndex = 0
+                            continue
+
+                        if editorUtil.getNextChar(self) == '\n':
+                            if self.deleteMode is True:
+                                editorUtil.deleteCharacter(self, self.currentLine, x)
+                            else:
+                                editorMovement.moveDown(self)
                                 self.currentLineIndex = 0
                             continue
 
@@ -463,7 +414,7 @@ class MainScr:
                             if self.deleteMode is True:
                                 editorUtil.deleteCharacter(self, self.currentLine, x)
                             else:
-                                self.moveRight(y, x)
+                                editorMovement.moveRight(self)
                             self.drawLines(self.editorscr, self.topLine)
                             self.drawLineNumbers()
                             c = editorUtil.getCurrentChar(self)
@@ -471,14 +422,15 @@ class MainScr:
                             if c in self.punctuationChars:
                                 break
 
-                            if editorUtil.getCurrentChar(self) == '\n':
+                            if editorUtil.getNextChar(self) == '\n':
                                 if self.deleteMode is True:
                                     editorUtil.deleteCharacter(self, self.currentLine, x)
+                                    editorUtil.deleteCharacter(self, self.currentLine, x)
                                 else:
-                                    self.moveDown(y, 0)
+                                    editorMovement.moveDown(self)
                                     self.currentLineIndex = 0
-                                    self.drawLines(self.editorscr, self.topLine)
-                                    self.drawLineNumbers()
+                                self.drawLines(self.editorscr, self.topLine)
+                                self.drawLineNumbers()
                                 break
 
                             if c == ' ':
@@ -486,7 +438,7 @@ class MainScr:
                                     if self.deleteMode is True:
                                         editorUtil.deleteCharacter(self, self.currentLine, x)
                                     else:
-                                        self.moveRight(y, x)
+                                        editorMovement.moveRight(self)
                                     self.drawLines(self.editorscr, self.topLine)
                                     self.drawLineNumbers()
                                     c = editorUtil.getCurrentChar(self)
@@ -499,17 +451,16 @@ class MainScr:
                     for i in range(repeats):
                         # handle edge case of `e` on '\n' line
                         if self.currentLine.value == '\n' or editorUtil.getNextChar(self) == '\n':
-                            self.moveDown(y, x)
+                            editorMovement.moveDown(self)
                             self.currentLineIndex = 0
                             continue
 
-                        self.moveRight(y, x)
+                        editorMovement.moveRight(self)
 
                         while True:
-                            while editorUtil.getNextChar(self) == ' ':
-                                self.moveRight(y, x)
-                            while editorUtil.getNextChar(self) in string.ascii_letters:
-                                self.moveRight(y, x)
+                            while (editorUtil.getNextChar(self) == ' ' or
+                                    editorUtil.getNextChar(self) in string.ascii_letters):
+                                editorMovement.moveRight(self)
                             self.drawLines(self.editorscr, self.topLine)
                             self.drawLineNumbers()
 
@@ -524,13 +475,13 @@ class MainScr:
                     for i in range(repeats):
 
                         moveForward = True
-                        self.moveLeft(y, x)
+                        editorMovement.moveLeft(self)
                         self.currentLineIndex -= 1
                         if self.currentLineIndex < 0:
                             if self.currentLine.lastNode is None:
                                 self.currentLineIndex = 0
                                 continue
-                            self.moveUp(y, x)
+                            editorMovement.moveUp(self)
                             editorUtil.moveToEndOfLine(self)
                             self.drawLines(self.editorscr, self.topLine)
                             self.drawLineNumbers()
@@ -544,7 +495,7 @@ class MainScr:
                         c = editorUtil.getCurrentChar(self)
 
                         while c == ' ':
-                            self.moveLeft(y, x)
+                            editorMovement.moveLeft(self)
                             self.drawLines(self.editorscr, self.topLine)
                             self.drawLineNumbers()
                             c = editorUtil.getCurrentChar(self)
@@ -555,7 +506,7 @@ class MainScr:
                                 if self.currentLine == 0:
                                     moveForward = False
                                     break
-                                self.moveUp(y, x)
+                                editorMovement.moveUp(self)
                                 self.drawLines(self.editorscr, self.topLine)
                                 self.drawLineNumbers()
                                 editorUtil.moveToEndOfLine(self)
@@ -563,7 +514,7 @@ class MainScr:
                                 self.drawLineNumbers()
 
                         while c in string.ascii_letters or c in string.digits:
-                            self.moveLeft(y, x)
+                            editorMovement.moveLeft(self)
                             self.drawLines(self.editorscr, self.topLine)
                             self.drawLineNumbers()
                             c = editorUtil.getCurrentChar(self)
@@ -578,21 +529,23 @@ class MainScr:
                                 break
 
                         if moveForward:
-                            self.moveRight(y, x)
+                            editorMovement.moveRight(self)
                             self.drawLines(self.editorscr, self.topLine)
                             self.drawLineNumbers()
 
                 elif c == 'g':  # go to beginning of file
                     self.currentLine = self.lineLinkedList.start
                     for i in range(repeats-1):
-                        self.moveDown(y,x)
+                        editorMovement.moveDown(self)
 
                 # move to different states
                 elif c == 'd':
                     if self.deleteMode is True:  # equivalent to dd command
                         self.currentLine = editorUtil.deleteLine(self, self.currentLine,
                                                                         trueDelete=True)
-                    self.deleteMode = True
+                        self.deleteMode = False
+                    else:
+                        self.deleteMode = True
                     continue
 
                 elif c in [str(x) for x in range(10)]:
@@ -607,7 +560,7 @@ class MainScr:
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
                         # insert a space
-                    self.moveRight(y, x)
+                    editorMovement.moveRight(self)
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
                     self.setState(State.APPEND)
@@ -618,7 +571,7 @@ class MainScr:
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
                         # insert a space
-                    self.moveRight(y, x)
+                    editorMovement.moveRight(self)
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
                     self.setState(State.APPEND)
@@ -646,7 +599,7 @@ class MainScr:
                 c = chr(self.editorscr.getch())
 
                 if ord(c) == 27:  # escape
-                    self.moveLeft(y, x)
+                    editorMovement.moveLeft(self)
                     self.setState(State.NORMAL)
 
                 elif ord(c) == 127:  # backspace

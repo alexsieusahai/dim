@@ -5,7 +5,7 @@ print(input())
 for i in range(10):
     print(i)
 
-test test test test test test test 
+test test test test test test test
 
 def sum(a,b):
     return a + b
