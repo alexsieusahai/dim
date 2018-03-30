@@ -13,6 +13,7 @@ import Util.editorUtil as editorUtil
 import Util.cursesUtil as cursesUtil
 import Util.syntaxHighlighting as syntaxHighlighting
 from algorithms.binSearch import dirBinSearch
+import algorithms.kmp as kmp
 import movement.fileNavMovement as fileNavMovement
 import movement.editorMovement as editorMovement
 
@@ -135,10 +136,18 @@ class MainScr:
 
             if lineToDraw == self.currentLine:
                 moveY = y + self.currentLineIndex//self.editorscr.getmaxyx()[1]
-                moveX = min(
-                        self.currentLineIndex % self.editorscr.getmaxyx()[1],
-                        len(self.currentLine.value)-2
-                        )  # avoid the newline char
+                # below solution doesn't work for tabs, but way faster
+                #moveX = min(
+                #        self.currentLineIndex % self.editorscr.getmaxyx()[1],
+                #        len(self.currentLine.value)-2
+                #        )  # avoid the newline char
+                for i in range(self.currentLineIndex):
+                    c = self.currentLine.value[i]
+                    moveX += 1
+                    if c == '\t':
+                        moveX += 3
+                    if moveX > self.editorscr.getmaxyx()[1]:
+                        moveX -= self.editorscr.getmaxyx()[1]
                 self.currentLineCount = lineIndex
                 if moveX <= -1:
                     moveX = 0
@@ -333,7 +342,7 @@ class MainScr:
                 y = 0
 
             elif c == '?':
-                searchSubStr = editorUtil.getCmd(self, getSearch=True)[1:]
+                searchSubStr = editorUtil.getCmd(self, altDisplayChar='?')[1:]
                 # want to take off the '?' character from the start
                 searchSubStr = searchSubStr.lstrip()
                 if searchSubStr == chr(27):  # escape character
@@ -537,9 +546,32 @@ class MainScr:
                             self.drawLineNumbers()
 
                 elif c == 'g':  # go to beginning of file
-                    self.currentLine = self.lineLinkedList.start
+                    self.currentLine = self.topLine = self.lineLinkedList.start
                     for i in range(repeats-1):
                         editorMovement.moveDown(self)
+
+                elif c == '/':  # search function
+                    patternToFind = editorUtil.getCmd(self, altDisplayChar='/')
+                    if patternToFind[0] == '/':
+                        patternToFind = patternToFind[1:]
+                    walk = self.lineLinkedList.start
+                    matchBuffer = []
+                    lineNumber = 1
+                    while walk is not None:
+                        matches = kmp.kmp(walk.value, patternToFind)
+                        if matches:
+                            for match in matches:
+                                matchBuffer.append((lineNumber, match))
+                        walk = walk.nextNode
+                        lineNumber += 1
+                    self.currentLine = self.topLine = self.lineLinkedList.start
+                    # go to first match
+                    (lineNumber, lineIndex) = matchBuffer[0]
+                    for i in range(lineNumber-1):
+                        editorMovement.moveDown(self)
+                    self.currentLineIndex = lineIndex
+
+
 
                 # move to different states
                 elif c == 'd':
@@ -628,7 +660,6 @@ class MainScr:
                     editorUtil.moveToBeginningOfLine(self)
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
-
 
                 else:  # any other character
                     self.currentLine.value = (self.currentLine.value[:self.currentLineIndex] +
