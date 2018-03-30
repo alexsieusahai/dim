@@ -73,6 +73,33 @@ def LLSort(sortable_LL):
 
 		return merge(left_half,right_half)
 
+	def fix_previous_pointers(head):
+		"""
+		sorting algorithms ensures that each nextNode.value will be larger than the 
+		current node.value
+
+		the previous pointers do not have the same guarentee (same as the unsorted list)
+		this method fixes all of the previous pointers
+		"""
+
+		if head == None:
+			return head
+
+		pointer_node = head
+
+		while pointer_node.nextNode != None:
+			pointer_node.nextNode.lastNode = pointer_node
+			pointer_node = pointer_node.nextNode
 
 
-	head = sortable_LL.start
+
+	sorted_head = recurse(sortable_LL.start)
+	sortable_LL.remake_list(sorted_head)
+
+if __name__ == "__main__":
+	"""
+	add tests here and stuff
+
+	import linked list object
+	"""
+	pass
