@@ -92,8 +92,9 @@ class MainScr:
         except AttributeError:
             self.state = stateToSet
         if self.state is State.APPEND:
-            if self.appendLineNode.value[-2] == ' ':
-                self.appendLineNode.value = self.appendLineNode.value[:-2]+'\n'
+            if len(self.appendLineNode.value) > 1:
+                if self.appendLineNode.value[-2] == ' ':
+                    self.appendLineNode.value = self.appendLineNode.value[:-2]+'\n'
         self.state = stateToSet
 
     def getStateStr(self):
@@ -124,6 +125,8 @@ class MainScr:
 
         # draw line numbers
         lineToDraw = self.topLine
+        if self.topLine is None:
+            assert(False)
         y = 0
         lineIndex = self.topLineCount
         self.linenumscr.move(0, 0)
@@ -616,6 +619,8 @@ class MainScr:
                         self.drawLineNumbers()
 
                 elif ord(c) == 10:   # enter
+                    if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0] -2:
+                        self.topLine = self.topLine.nextNode
                     self.currentLine = editorUtil.insertLine(self, self.currentLine)
                     editorUtil.moveToBeginningOfLine(self)
                     self.drawLines(self.editorscr, self.topLine)
