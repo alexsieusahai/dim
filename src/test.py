@@ -8,5 +8,4 @@ for i in range(10):
 test test test test test test test
 
 def sum(a,b):
-    return a + b
-
+    return a + b 

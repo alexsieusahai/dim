@@ -46,10 +46,6 @@ def deleteLine(editorObj, lineNode, trueDelete=False):
     ... -> lineNode.lastNode -> lineNode.nextNode -> ...
     """
 
-    # if it's the last line
-    if lineNode.nextNode is None:
-        return lineNode # don't delete
-
     if trueDelete:
         editorObj.currentLineIndex = 0
         lineNode.lastNode.value = lineNode.lastNode.value

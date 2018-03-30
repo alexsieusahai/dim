@@ -544,7 +544,12 @@ class MainScr:
                 # move to different states
                 elif c == 'd':
                     if self.deleteMode is True:  # equivalent to dd command
-                        self.currentLine = editorUtil.deleteLine(self, self.currentLine,
+                        if self.currentLine.nextNode is None: # last node
+                            temp = self.currentLine.lastNode
+                            editorUtil.deleteLine(self, self.currentLine, trueDelete=True)
+                            self.currentLine = temp
+                        else:
+                            self.currentLine = editorUtil.deleteLine(self, self.currentLine,
                                                                         trueDelete=True)
                         self.deleteMode = False
                     else:
@@ -615,8 +620,6 @@ class MainScr:
                     if self.currentLineIndex == -1:
                         # delete the line
                         self.currentLine = editorUtil.deleteLine(self, self.currentLine)
-                        self.drawLines(self.editorscr, self.topLine)
-                        self.drawLineNumbers()
 
                 elif ord(c) == 10:   # enter
                     if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0] -2:

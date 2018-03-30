@@ -1,4 +1,9 @@
 def precomputeLPS(pattern):
+    """
+    Precomputes an array called lps, where len(lps) == len(pattern) is true.
+    for the ith entry of lps, we know that the pattern from 0 to lps[i] is both
+    a proper prefix of pattern, and a suffix of pattern.
+    """
     length = 0
     lps = []
     for i in pattern:
@@ -26,7 +31,11 @@ def precomputeLPS(pattern):
     return lps
 
 def kmp(string, pattern):
+    """
+    textbook implementation of kmp
+    """
     lps = precomputeLPS(pattern)
+    # get lps so we don't have to redo a lot of our work
     i = j = 0
     foundIndicies = []
     while i < len(string):
@@ -38,10 +47,19 @@ def kmp(string, pattern):
         if j == len(pattern):  # found a match
             foundIndicies.append(i-j)
             j = lps[j-1]  # skip over what we know will match
+            # since we know the string from i-j to i is a
+            # proper prefix of the string at index i-j and a
+            # proper suffix of the string at index j
 
+        # after j matches, encounter a mismatch
         elif i < len(string) and pattern[j] != string[i]:
+            # what do we do?
             if j != 0:
                 j = lps[j-1]
+                # do not bother matching lps[0,...,j-1] characters
+                # since we know they match already by
+                # the properties of lps array
+
             else:
                 i += 1
 
