@@ -33,6 +33,7 @@ def precomputeLPS(pattern):
 def kmp(string, pattern):
     """
     textbook implementation of kmp
+    returns a list of found indicies
     """
     lps = precomputeLPS(pattern)
     # get lps so we don't have to redo a lot of our work

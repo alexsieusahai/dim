@@ -93,13 +93,13 @@ def insertLine(editorObj,lineNode):
 
     return newNode
 
-def getCmd(editorObj,getSearch=False):
+def getCmd(editorObj,altDisplayChar=''):
     """
-    Get command from user when in command mode
+    Get command from user using the command line window
     """
     cmdStr = ':'
-    if getSearch:
-        cmdStr = '?'
+    if altDisplayChar:
+        cmdStr = altDisplayChar
     c = ''
     while c != '\n':
         if c == chr(127): # backspace
