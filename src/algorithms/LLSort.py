@@ -44,11 +44,13 @@ def LLSort(sortable_LL):
 
 		if nodeA.value <= nodeB.value:
 			merged = nodeA
-			merged.next = merge(nodeA.nextNode,nodeB)
+			merged.nextNode = merge(nodeA.nextNode,nodeB)
+			merged.nextNode.lastNode = merged
 
 		else:
 			merged = nodeB
 			merged.nextNode = merge(nodeA,nodeB.nextNode)
+			merged.nextNode.lastNode = merged
 
 		return merged
 
@@ -91,9 +93,12 @@ def LLSort(sortable_LL):
 			pointer_node.nextNode.lastNode = pointer_node
 			pointer_node = pointer_node.nextNode
 
+		return head
+
 
 
 	sorted_head = recurse(sortable_LL.start)
+	sorted_head = fix_previous_pointers(sorted_head)
 	sortable_LL.remake_list(sorted_head)
 
 if __name__ == "__main__":
