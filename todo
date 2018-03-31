@@ -11,13 +11,11 @@ SATURDAY TODO:
     - figure out relative imports
 	
 SUNDAY TODO:
-	- Hackday @ se
 	- Implement `undo` and `redo` buffer (trivial with `Piece Table`)
-	- Implement a buffer for jumps (use a linked list so you can jump forward and backward)
+	- Implement a buffer for jumps (use a doubly linked list so you can jump forward and backward)
 	- Implement a buffer for commands that were previously called (same as jumps)
 	
 MONDAY TODO:
-	- Hacktime today!
 	- Implement emergency file saving
 	- Compress that file upon exiting using Huffman Compression
 
@@ -27,7 +25,7 @@ TUESDAY TODO:
 	
 WEDNESDAY TODO:
 	- Refactor jumps ('w','e','b') so it's a lot faster (easy fix), 
-		implementation of `editorUtil.getCharAtLineWithIndex(line,index)
+	    - implementation of `editorUtil.getCharAtLineWithIndex(line,index)
 		will make it easy
 	- Work on piping for console output (so you can see what you're typing)
 		- Set the output to a linked list and use drawlines() to draw it, and traverse it using moveUp, moveDown, etc
@@ -39,8 +37,7 @@ THURSDAY TODO:
 	- Finish piping
 
 FRIDAY TODO:
-	- Implement real time automatic testing, use threading and a seperate pipe than stdin to pipe data into output prog
-		so that the user doesn't have the stdin pipe (which curses is using) blocked while it's being tested
+	- Implement real time automatic testing, use threading and a seperate pipe than stdin to pipe data into output prog so that the user doesn't have the stdin pipe (which curses is using) blocked while it's being tested
 		
 SATURDAY TODO:
 	- Day/Night color mode, `redify` mode for increased red light exposure at night (like f.lux)
@@ -48,10 +45,11 @@ SATURDAY TODO:
 	
 SUNDAY TODO:
 	- Implement as much of `VISUAL` mode as you can
+    - Hackday at se
 	
 MONDAY TODO:
 	- Write up README.md and manual
-	- Hacktime! presentation again (for some practice presenting)
+	- Hacktime! presentation (for some practice presenting)
 	
 TUESDAY TODO:
 	- Presentation day!
@@ -76,13 +74,10 @@ Bugs:
 - Opening an empty file results in an error
 	- Easy fix, if start is None then insert a line at the start
 
-- Command window has black background instead of cool grey (easy fix, just don't want to bother myself with it yet
-
 *********************
 ONCE IT'S FINISHED
 *********************
 Prettify the `README.md` page, with gifs and screenshots and a link to a manual
-Implement some sort of bug sending feature which sends bugs to my inbox
 
 ****************************
 WISHLIST
@@ -95,7 +90,7 @@ Spellcheck
     - Factor oracle, suffix trie (two modes?)
 
 Inertial Scrolling
-    - have to make drawLines faster before doing this
+    - have to make a lot of stuff faster before doing this
 
 Konami Code easter egg
 
