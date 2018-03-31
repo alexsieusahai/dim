@@ -2,6 +2,12 @@ from dataStructures.lineNode import LineNode
 
 class LineLinkedList: # doubly linked list for storing lines
     def __init__(self,lineList):
+        """
+        Constructs a doubly linked list of lineNodes with the following attributes:
+        start (the node at the top)
+        end (the node at the bottom)
+        length (the length of the object)
+        """
         self.length = 0
         self.start = None
         self.end = None
@@ -33,9 +39,12 @@ class LineLinkedList: # doubly linked list for storing lines
         return alist
 
     def print_LL(self):
+        """
+        print linked list as list
+        """
 
         LL_as_list = self.toList()
-        print(LL_as_list)
+        print(' '.join(LL_as_list))
 
 if __name__ == '__main__':
     ll = LineLinkedList([x for x in 'dog'])

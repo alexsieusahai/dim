@@ -43,6 +43,7 @@ class MainScr:
 
         self.setState(State.NORMAL)
         self.runFileNavigation(breakEarly=True)
+        self.matchBuffer = []
         self.drawAndRefreshFileNavigation()
 
         # grabbing the lines from the file
@@ -117,6 +118,12 @@ class MainScr:
     def getState(self):
         return self.state
 
+    def moveTo(self, lineNumber, lineIndex):
+        self.currentLine = self.topLine = self.lineLinkedList.start
+        for i in range(lineNumber-1):
+            editorMovement.moveDown(self)
+        self.currentLineIndex = lineIndex
+
     def drawLineNumbers(self):
 
         # clear old data off the screen
@@ -143,11 +150,14 @@ class MainScr:
                 #        )  # avoid the newline char
                 for i in range(self.currentLineIndex):
                     c = self.currentLine.value[i]
-                    moveX += 1
                     if c == '\t':
-                        moveX += 3
+                        moveX += 8
+                    else:
+                        moveX += 1
                     if moveX > self.editorscr.getmaxyx()[1]:
                         moveX -= self.editorscr.getmaxyx()[1]
+                    moveX = moveX % self.editorscr.getmaxyx()[1]
+
                 self.currentLineCount = lineIndex
                 if moveX <= -1:
                     moveX = 0
@@ -555,23 +565,32 @@ class MainScr:
                     if patternToFind[0] == '/':
                         patternToFind = patternToFind[1:]
                     walk = self.lineLinkedList.start
-                    matchBuffer = []
+                    self.matchBuffer = []
                     lineNumber = 1
                     while walk is not None:
                         matches = kmp.kmp(walk.value, patternToFind)
                         if matches:
                             for match in matches:
-                                matchBuffer.append((lineNumber, match))
+                                self.matchBuffer.append((lineNumber, match))
                         walk = walk.nextNode
                         lineNumber += 1
                     self.currentLine = self.topLine = self.lineLinkedList.start
                     # go to first match
-                    (lineNumber, lineIndex) = matchBuffer[0]
-                    for i in range(lineNumber-1):
-                        editorMovement.moveDown(self)
-                    self.currentLineIndex = lineIndex
+                    if self.matchBuffer:
+                        (lineNumber, lineIndex) = self.matchBuffer[0]
+                        self.moveTo(lineNumber, lineIndex)
+                        temp = self.matchBuffer[0]
+                        del self.matchBuffer[0]
+                        self.matchBuffer.append(temp)
 
-
+                elif c == 'n':
+                    # jump to the next thing in the match buffer
+                    if self.matchBuffer != []:
+                        (lineNumber, lineIndex) = self.matchBuffer[0]
+                        self.moveTo(lineNumber, lineIndex)
+                        temp = self.matchBuffer[0]
+                        del self.matchBuffer[0]
+                        self.matchBuffer.append(temp)
 
                 # move to different states
                 elif c == 'd':
@@ -658,6 +677,18 @@ class MainScr:
                         self.topLine = self.topLine.nextNode
                     self.currentLine = editorUtil.insertLine(self, self.currentLine)
                     editorUtil.moveToBeginningOfLine(self)
+                    # get the spacing from the line above
+                    i = 0
+                    lastLineValue = self.currentLine.lastNode.value
+                    while True:
+                        if lastLineValue[i] == ' ' or lastLineValue[i] == '\t':
+                            self.currentLine.value = (self.currentLine.value[:-1]+
+                            ('\t' if lastLineValue[i] == '\t' else ' ')+'\n')
+                            self.currentLineIndex += 1
+                            self.currentLine.colors.append(0)
+                            i += 1
+                        else:
+                            break
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
 

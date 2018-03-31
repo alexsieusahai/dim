@@ -3,11 +3,10 @@ MILESTONES:
 *****************
 
 FRIDAY TODO:
-    - Implement searching using kmp
+    - figure out relative imports
 	- If `Piece Table` looks good, implement `Piece Table`
 		- Otherwise, implement `Rope` or `Gap Buffer`
         - Probably gonna implement rope
-	- Implement automatic tab spacing upon inserting a line (take the tab space from the last line)
     - Implement deletion for `e` and `b`
 
 SATURDAY TODO:

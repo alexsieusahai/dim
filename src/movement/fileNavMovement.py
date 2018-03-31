@@ -1,6 +1,9 @@
 import Util.editorUtil as editorUtil
 
 def moveDown(fileNavObj, y):
+    """
+    Move down one step
+    """
     y += editorUtil.lineHeight(fileNavObj.filenavscr, fileNavObj.currentDir)
 
     if fileNavObj.currentDir.nextNode is None:
@@ -17,6 +20,9 @@ def moveDown(fileNavObj, y):
     return y
 
 def moveUp(fileNavObj, y):
+    """
+    Move up one step
+    """
     y -= editorUtil.lineHeight(fileNavObj.filenavscr, fileNavObj.currentDir.lastNode)
     # remember you have ' -' at the start of every dir
     if y < 0:

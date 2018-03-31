@@ -1,15 +1,17 @@
-import os
+import os  # to get the dirs
 
 from dataStructures.lineNode import LineNode
 
 def lineHeight(scr, lineNode):
     """
     Returns the "height" (how many rows it takes up) of lineNode object passed in
+    Doesn't work properly rn
     """
     if lineNode is None:
         return 0
     manyLines = (len(lineNode.value)+1)//scr.getmaxyx()[1]+1
-    return manyLines if manyLines else 1
+    # above solution doesn't account for tabs
+    return manyLines
 
 def getCurrentChar(editorObj):
     return editorObj.currentLine.value[editorObj.currentLineIndex]
@@ -124,3 +126,5 @@ def getDirs():
             i -= 1
         i += 1
     return dirs
+
+
