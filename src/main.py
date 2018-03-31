@@ -7,7 +7,7 @@ import curses  # drawing the editor
 
 from dataStructures.lineLinkedList import LineLinkedList
 from Util.initCurses import initColors, initScreens
-from constants import State, SyntaxColors, Colors, WindowConstants
+from constants import State, WindowConstants
 import Util.fileUtil as fileUtil
 import Util.editorUtil as editorUtil
 import Util.cursesUtil as cursesUtil
@@ -29,7 +29,7 @@ class MainScr:
         cursesUtil.birth()
 
         # init all the colors
-        self.colorMap = initColors(SyntaxColors, Colors)
+        self.colorMap = initColors('default.json')
         self.stdscr.attrset(curses.color_pair(self.colorMap['TEXT']))
         self.stdscr.bkgd(' ', curses.color_pair(self.colorMap['TEXT']))
         self.editorscr.bkgd(' ', curses.color_pair(self.colorMap['TEXT']))
@@ -66,8 +66,6 @@ class MainScr:
         self.currentLineCount = 0
 
         # set up something bright for statusscr
-        #self.statusscr.bkgd(' ', curses.color_pair(SyntaxColors.STATUS.value))
-        #self.statusscr.attrset(curses.color_pair(SyntaxColors.STATUS.value))
         self.statusscr.bkgd(' ', curses.color_pair(self.colorMap['STATUS']))
         self.statusscr.attrset(curses.color_pair(self.colorMap['STATUS']))
         self.statusscr.refresh()
@@ -299,10 +297,8 @@ class MainScr:
     def setUpFileHighlighting(self):
         directory = self.dirs.start
         while directory is not None:
-            #color = SyntaxColors.FILE.value
             color = self.colorMap['FILE']
             if os.path.isdir(directory.value):
-                #color = SyntaxColors.FOLDER.value
                 color = self.colorMap['FOLDER']
             for i in range(len(directory.value)):
                 directory.colors[i] = color
@@ -783,8 +779,9 @@ class MainScr:
                 self.editorscr.clear()
                 optionsText = LineLinkedList(['Change Colors'
                                                             ])
-                tempLinkedList = self.lineLinkedList # save it for later
 
+                # save all of the pointers for later
+                tempLinkedList = self.lineLinkedList
                 tempCurrentLine = self.currentLine
                 tempTopLine = self.topLine
                 self.lineLinkedList = optionsText
@@ -809,9 +806,10 @@ class MainScr:
 
                     elif c == chr(10):
                         if self.currentLine.value is 'Change Colors':
-                            changeColorsUI.changeColorsUI(self)
-                        else:
-                            self.state = State.NORMAL
+                            themeFileName = changeColorsUI.changeColorsUI(self,
+                                                        self.colorMap['BACKGROUND'])
+                            self.colorMap = initColors(themeFileName)
+                        self.state = State.NORMAL
                         break
 
                     elif c == 'j':
@@ -819,6 +817,11 @@ class MainScr:
 
                     elif c == 'k':
                         editorMovement.moveUp(self)
+
+                # set everything back to the way it was on the way out
+                self.lineLinkedList = tempLinkedList
+                self.currentLine = tempCurrentLine
+                self.topLine = tempTopLine
 
 if __name__ == "__main__":
     editor = MainScr()

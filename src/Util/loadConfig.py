@@ -1,3 +1,4 @@
+import os
 import json  # keep the configs in json format, really easy to read and parse
 
 def getColorConfig(themeFileName):
@@ -5,5 +6,5 @@ def getColorConfig(themeFileName):
     return json.load(fileStream)
 
 if __name__ == "__main__":
-    print(getColorConfig('test.json'))
+    print(getColorConfig('default.json'))
 

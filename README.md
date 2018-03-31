@@ -25,6 +25,7 @@ Super similar to `vim` bindings, so if you use `vim` bindings a lot you'll be (m
     * Not implemented yet!
 * `:` to enter `CMD_LINE` mode
 * `\`` to enter `FILE_NAV` mode
+* `.` to enter `OPTIONS` mode
 
 #### More advanced features
 * `w` to jump forward a word and then the whitespace in front of the word

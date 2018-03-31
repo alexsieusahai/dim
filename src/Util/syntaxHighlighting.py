@@ -2,8 +2,6 @@ import pygments
 from pygments.lexers import Python3Lexer
 from constants import SyntaxColors, Colors
 
-from Util.cursesUtil import kill
-
 def setColors(editorObj, colorMap):
     """
     Sets the colors of the editorObj for every line

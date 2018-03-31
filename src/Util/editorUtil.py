@@ -67,7 +67,7 @@ def deleteLine(editorObj, lineNode, trueDelete=False):
         return returnNode.nextNode
     return returnNode
 
-def insertLine(editorObj,lineNode):
+def insertLine(editorObj, lineNode):
     """
     Inserts a line just like how vim does
     ... -> lineNode.lastNode -> lineNode -> lineNode.nextNode -> ...
@@ -83,8 +83,8 @@ def insertLine(editorObj,lineNode):
     if editorObj.editorscr.getyx()[0] + 1 > editorObj.editorscr.getmaxyx()[0] - 2:
         editorObj.topLineCount += 1
 
-    temp = lineNode.nextNode  # save it for later
-    lineNode.nextNode = newNode
+    temp = lineNode.nextNode  # save it for later,
+    lineNode.nextNode = newNode # since we're overwriting lineNode.nextNode
     newNode.nextNode = temp
     if temp != None:
         temp.lastNode = newNode

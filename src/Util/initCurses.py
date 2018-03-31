@@ -1,26 +1,26 @@
 import curses
 from . import loadConfig
 
-def initColors(SyntaxColors, Colors):
+def initColors(fileName):
         """
         Initialize all colors and color pairs
         """
         curses.start_color()
 
-        config = loadConfig.getColorConfig('Util/test.json')
+        config = loadConfig.getColorConfig('themes/'+fileName)
         # get the general editor background, set to 0
-        colorMap = {'BACKGROUND':0, 'STATUS_BACKGROUND':1}
-        curses.init_color(0,
+        colorMap = {'BACKGROUND':10, 'STATUS_BACKGROUND':11}
+        curses.init_color(10,
             config['BACKGROUND']['r'],
             config['BACKGROUND']['g'],
             config['BACKGROUND']['b']
             )
-        curses.init_color(1,
+        curses.init_color(11,
             config['STATUS_BACKGROUND']['r'],
             config['STATUS_BACKGROUND']['g'],
             config['STATUS_BACKGROUND']['b']
             )
-        i = 2
+        i = 12
         for typeSyntax in config:
             if (typeSyntax == 'BACKGROUND' or
                     typeSyntax == 'STATUS_BACKGROUND'):
