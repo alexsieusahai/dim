@@ -473,20 +473,36 @@ class MainScr:
                     for i in range(repeats):
                         # handle edge case of `e` on '\n' line
                         if self.currentLine.value == '\n' or editorUtil.getNextChar(self) == '\n':
+                            if self.deleteMode is True:
+                                if self.currentLine.value == '\n':
+                                    editorUtil.deleteCharacter(self, self.currentLine, x)
+                                else:
+                                    editorUtil.deleteCharacter(self, self.currentLine, x)
+                                    editorUtil.deleteCharacter(self, self.currentLine, x)
+                                continue
+
                             editorMovement.moveDown(self)
                             self.currentLineIndex = 0
                             continue
 
-                        editorMovement.moveRight(self)
+                        if self.deleteMode is True:
+                            editorUtil.deleteCharacter(self, self.currentLine, x)
+                        else:
+                            editorMovement.moveRight(self)
 
                         while True:
                             while (editorUtil.getNextChar(self) == ' ' or
                                     editorUtil.getNextChar(self) in string.ascii_letters):
-                                editorMovement.moveRight(self)
+                                if self.deleteMode is True:
+                                    editorUtil.deleteCharacter(self, self.currentLine, x)
+                                else:
+                                    editorMovement.moveRight(self)
                             self.drawLines(self.editorscr, self.topLine)
                             self.drawLineNumbers()
-
                             break
+
+                        if self.deleteMode is True:
+                            editorUtil.deleteCharacter(self, self.currentLine, x)
 
                 elif c == 'b':
                     """

@@ -44,6 +44,8 @@ Super similar to `vim` bindings, so if you use `vim` bindings a lot you'll be (m
     * `3w` to jump forward 3 words (including whitespace at the end)
 * Deletion and numbers can be combined. Examples below:
     * `d3w` deletes the next 3 words (and whitespace)
+* `/` to search for a substring in the current text and store it in a buffer
+    * `n` to cycle through the search buffer
 
 ### Insert Mode
 Type as normally! To exit insert mode and go back to `NORMAL` mode, press `ESC`.

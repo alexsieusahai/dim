@@ -3,11 +3,9 @@ MILESTONES:
 *****************
 
 FRIDAY TODO:
-    - figure out relative imports
 	- If `Piece Table` looks good, implement `Piece Table`
-		- Otherwise, implement `Rope` or `Gap Buffer`
+	    - Otherwise, implement `Rope` or `Gap Buffer`
         - Probably gonna implement rope
-    - Implement deletion for `e` and `b`
 
 SATURDAY TODO:
 	- Get `dimtutor` set up and going
@@ -17,10 +15,11 @@ SATURDAY TODO:
 	- Create theme creator interface, store results
 	- Create a `OPTIONS` state that lets you select theme (design it so that you can add onto it later)
     - Write bin search for linked lists
+    - Implement deletion `b`
+    - figure out relative imports
 	
 SUNDAY TODO:
 	- Hackday @ se
-	- Implement randomized quicksort if Amir hasn't already
 	- Implement `undo` and `redo` buffer (trivial with `Piece Table`)
 	- Implement a buffer for jumps (use a linked list so you can jump forward and backward)
 	- Implement a buffer for commands that were previously called (same as jumps)
