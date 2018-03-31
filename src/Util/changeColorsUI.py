@@ -1,0 +1,3 @@
+
+def changeColorsUI(editorObj):
+    pass

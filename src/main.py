@@ -12,6 +12,7 @@ import Util.fileUtil as fileUtil
 import Util.editorUtil as editorUtil
 import Util.cursesUtil as cursesUtil
 import Util.syntaxHighlighting as syntaxHighlighting
+import Util.changeColorsUI as changeColorsUI
 from algorithms.binSearch import dirBinSearch
 import algorithms.kmp as kmp
 import movement.fileNavMovement as fileNavMovement
@@ -22,23 +23,29 @@ class MainScr:
 
     def __init__(self):
 
+
         # set up curses stuff
         initScreens(self, WindowConstants)
         cursesUtil.birth()
 
         # init all the colors
-        initColors(SyntaxColors, Colors)
-        self.stdscr.attrset(curses.color_pair(SyntaxColors.TEXT.value))
-        self.stdscr.bkgd(' ', curses.color_pair(SyntaxColors.TEXT.value))
-        self.editorscr.bkgd(' ', curses.color_pair(SyntaxColors.TEXT.value))
-        self.filenavscr.bkgd(' ', curses.color_pair(SyntaxColors.TEXT.value))
+        self.colorMap = initColors(SyntaxColors, Colors)
+        self.stdscr.attrset(curses.color_pair(self.colorMap['TEXT']))
+        self.stdscr.bkgd(' ', curses.color_pair(self.colorMap['TEXT']))
+        self.editorscr.bkgd(' ', curses.color_pair(self.colorMap['TEXT']))
+        self.filenavscr.bkgd(' ', curses.color_pair(self.colorMap['TEXT']))
         self.filenavscr.refresh()
-
         self.linenumscr.attrset(
-                curses.color_pair(SyntaxColors.LINE_NUMBER.value)
+                curses.color_pair(self.colorMap['LINE_NUMBER'])
                 )
         self.linenumscr.bkgd(
-                ' ', curses.color_pair(SyntaxColors.LINE_NUMBER.value)
+                ' ', curses.color_pair(self.colorMap['LINE_NUMBER'])
+                )
+        self.cmdlinescr.attrset(
+                curses.color_pair(self.colorMap['TEXT'])
+                )
+        self.cmdlinescr.bkgd(
+                ' ', curses.color_pair(self.colorMap['TEXT'])
                 )
 
         self.setState(State.NORMAL)
@@ -59,8 +66,10 @@ class MainScr:
         self.currentLineCount = 0
 
         # set up something bright for statusscr
-        self.statusscr.bkgd(' ', curses.color_pair(SyntaxColors.STATUS.value))
-        self.statusscr.attrset(curses.color_pair(SyntaxColors.STATUS.value))
+        #self.statusscr.bkgd(' ', curses.color_pair(SyntaxColors.STATUS.value))
+        #self.statusscr.attrset(curses.color_pair(SyntaxColors.STATUS.value))
+        self.statusscr.bkgd(' ', curses.color_pair(self.colorMap['STATUS']))
+        self.statusscr.attrset(curses.color_pair(self.colorMap['STATUS']))
         self.statusscr.refresh()
 
         # keep 2 pointers; 1 for top line node, 1 for current line node
@@ -290,9 +299,11 @@ class MainScr:
     def setUpFileHighlighting(self):
         directory = self.dirs.start
         while directory is not None:
-            color = SyntaxColors.FILE.value
+            #color = SyntaxColors.FILE.value
+            color = self.colorMap['FILE']
             if os.path.isdir(directory.value):
-                color = SyntaxColors.FOLDER.value
+                #color = SyntaxColors.FOLDER.value
+                color = self.colorMap['FOLDER']
             for i in range(len(directory.value)):
                 directory.colors[i] = color
             directory = directory.nextNode
@@ -343,7 +354,7 @@ class MainScr:
                     self.lineLinkedList = fileUtil.loadFile(self.fileName)
                     self.topLine = self.currentLine = self.lineLinkedList.start
                     self.currentLineIndex = 0
-                    syntaxHighlighting.setColors(self)
+                    syntaxHighlighting.setColors(self, self.colorMap)
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
 
@@ -377,7 +388,7 @@ class MainScr:
         """
         while True:
 
-            syntaxHighlighting.setColors(self)
+            syntaxHighlighting.setColors(self, self.colorMap)
 
             self.drawStatus()  # draw the status bar text on status bar
             self.drawLines(self.editorscr, self.topLine)
@@ -666,8 +677,12 @@ class MainScr:
                 elif c == '`':
                     self.setState(State.FILE_NAVIGATION)
 
+                elif c == '.':
+                    self.setState(State.OPTIONS)
+
                 self.deleteMode = False
                 self.commandRepeats = ''
+
 
             if self.state == State.INSERT or self.state == State.APPEND:
 
@@ -764,6 +779,46 @@ class MainScr:
             elif self.state == State.FILE_NAVIGATION:
                 self.runFileNavigation()
 
+            elif self.state == State.OPTIONS:
+                self.editorscr.clear()
+                optionsText = LineLinkedList(['Change Colors'
+                                                            ])
+                tempLinkedList = self.lineLinkedList # save it for later
+
+                tempCurrentLine = self.currentLine
+                tempTopLine = self.topLine
+                self.lineLinkedList = optionsText
+                self.topLine = self.currentLine = self.lineLinkedList.start
+
+                self.drawLineNumbers()
+                self.drawLines(self.editorscr, self.topLine)
+                self.editorscr.refresh()
+                self.linenumscr.refresh()
+
+                self.editorscr.move(0,0)
+
+                while True:
+                    c = chr(self.editorscr.getch())
+
+                    if c == chr(27):  # escape
+                        self.lineLinkedList = tempLinkedList
+                        self.topLine = tempTopLine
+                        self.currentLine = tempCurrentLine
+                        self.state = State.NORMAL
+                        break
+
+                    elif c == chr(10):
+                        if self.currentLine.value is 'Change Colors':
+                            changeColorsUI.changeColorsUI(self)
+                        else:
+                            self.state = State.NORMAL
+                        break
+
+                    elif c == 'j':
+                        editorMovement.moveDown(self)
+
+                    elif c == 'k':
+                        editorMovement.moveUp(self)
 
 if __name__ == "__main__":
     editor = MainScr()

@@ -7,6 +7,7 @@ class State(Enum):
     COMMAND_LINE = 3
     FILE_NAVIGATION = 4
     APPEND = 5
+    OPTIONS = 6
 
 class SyntaxColors(Enum):
 
