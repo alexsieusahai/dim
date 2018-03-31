@@ -1,11 +1,16 @@
+import os
+
 import curses
 from . import loadConfig
 
-def initColors(fileName):
+def initColors(dimDir, fileName):
         """
         Initialize all colors and color pairs
         """
         curses.start_color()
+
+        temp = os.getcwd()  # save it for later so we can go back
+        os.chdir(dimDir)
 
         config = loadConfig.getColorConfig('themes/'+fileName)
         # get the general editor background, set to 0
@@ -48,6 +53,8 @@ def initColors(fileName):
 
             colorMap[typeSyntax] = i
             i += 1
+
+        os.chdir(temp)  # go back to where you were before
         return colorMap
 
 def initScreens(editorObj,Constants):

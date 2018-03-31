@@ -1,6 +1,31 @@
 import curses  # for the color selector
+import os
+
 from dataStructures.lineLinkedList import LineLinkedList
 import Util.editorUtil as editorUtil
+import movement.editorMovement as editorMovement
+
+def displayThemes(editorObj, dimDir):
+    os.chdir(dimDir+'/themes')
+
+    editorObj.lineLinkedList = LineLinkedList(os.listdir())
+    editorObj.currentLine = editorObj.topLine = editorObj.lineLinkedList.start
+    editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
+    editorObj.drawLineNumbers()
+    editorObj.editorscr.refresh()
+
+    while True:
+        c = chr(editorObj.editorscr.getch())
+        if c == 'j':
+            editorMovement.moveDown(editorObj)
+        if c == 'k':
+            editorMovement.moveUp(editorObj)
+        if c == chr(10):  # enter
+            return editorObj.currentLine.value
+        if c == chr(27):  # escape
+            break
+        editorObj.drawLineNumbers()
+        editorObj.editorscr.refresh()
 
 def changeColorsUI(editorObj, backgroundKey):
     raise NotImplementedError

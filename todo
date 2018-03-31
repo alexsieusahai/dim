@@ -2,19 +2,11 @@
 MILESTONES:
 *****************
 
-FRIDAY TODO:
+SATURDAY TODO:
 	- If `Piece Table` looks good, implement `Piece Table`
 	    - Otherwise, implement `Rope` or `Gap Buffer`
         - Probably gonna implement rope
-
-SATURDAY TODO:
-	- Implement Color Themes
-	- Implement storage solution using `JSON` or `YAML` (preferably `YAML` so it's easier to edit, but `JSON` might be better)
-	- Figure out a way to structure the themes so that they're easy to install and load
-	- Create theme creator interface, store results
-	- Create a `OPTIONS` state that lets you select theme (design it so that you can add onto it later)
 	- Get `dimtutor` set up and going
-    - Write bin search for linked lists
     - Implement deletion `b`
     - figure out relative imports
 	

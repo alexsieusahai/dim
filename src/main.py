@@ -12,7 +12,7 @@ import Util.fileUtil as fileUtil
 import Util.editorUtil as editorUtil
 import Util.cursesUtil as cursesUtil
 import Util.syntaxHighlighting as syntaxHighlighting
-import Util.changeColorsUI as changeColorsUI
+import Util.changeColorsUtil as changeColorsUtil
 from algorithms.binSearch import dirBinSearch
 import algorithms.kmp as kmp
 import movement.fileNavMovement as fileNavMovement
@@ -22,14 +22,16 @@ import movement.editorMovement as editorMovement
 class MainScr:
 
     def __init__(self):
-
-
+        """
+        Inits screens, curses stuff, colors, etc
+        """
         # set up curses stuff
         initScreens(self, WindowConstants)
         cursesUtil.birth()
 
         # init all the colors
-        self.colorMap = initColors('default.json')
+        self.dimDir = os.getcwd()
+        self.colorMap = initColors(self.dimDir, 'default.json')
         self.stdscr.attrset(curses.color_pair(self.colorMap['TEXT']))
         self.stdscr.bkgd(' ', curses.color_pair(self.colorMap['TEXT']))
         self.editorscr.bkgd(' ', curses.color_pair(self.colorMap['TEXT']))
@@ -784,6 +786,7 @@ class MainScr:
                 tempLinkedList = self.lineLinkedList
                 tempCurrentLine = self.currentLine
                 tempTopLine = self.topLine
+
                 self.lineLinkedList = optionsText
                 self.topLine = self.currentLine = self.lineLinkedList.start
 
@@ -806,9 +809,10 @@ class MainScr:
 
                     elif c == chr(10):
                         if self.currentLine.value is 'Change Colors':
-                            themeFileName = changeColorsUI.changeColorsUI(self,
-                                                        self.colorMap['BACKGROUND'])
-                            self.colorMap = initColors(themeFileName)
+                            themeFileName = changeColorsUtil.displayThemes(
+                                                            self, self.dimDir)
+                            # need dimDir so we know the path to themes
+                            self.colorMap = initColors(self.dimDir, themeFileName)
                         self.state = State.NORMAL
                         break
 
