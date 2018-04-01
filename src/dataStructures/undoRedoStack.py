@@ -1,4 +1,5 @@
 from dataStructures.lineNode import LineNode
+import Util.editorUtil as editorUtil
 
 class UndoRedoStack:
     """
@@ -8,21 +9,6 @@ class UndoRedoStack:
     def __init__(self):
         self.undoStack = []
         self.redoStack = []
-
-    def doAction(self, action, editorObj):
-        """
-        Helper function for undo and redo;
-        does the action supplied to editorObj.
-        """
-        # case 1; tuple that looks like
-        # (lineNode, lineNode.value)
-        if isinstance(action[0], LineNode):
-            # if we are operating on a lineNode
-            action[0].value = action[1]
-            lineIndex = action[2]
-            line = action[0]
-        # move to that place
-        editorObj.moveToNode(line, lineIndex)
 
     def pushOntoUndo(self, action):
         """
@@ -40,10 +26,38 @@ class UndoRedoStack:
         self.redoStack.append(action)
 
     def getCurrentState(self, editorObj, linePointer):
+        """
+        Helper function for undo and redo.
+
+        Get the current line value and the current index at a line
+        and return it for other use.
+        """
         currentValue = linePointer.value
         currentIndex = editorObj.currentLineIndex
         return ((linePointer, currentValue, currentIndex))
 
+    def doAction(self, action, editorObj):
+        """
+        Helper function for undo and redo;
+        does the action supplied to editorObj.
+        """
+        # case 1; tuple that looks like
+        # (lineNode, lineNode.value)
+        if isinstance(action[0], LineNode):
+            # if we are operating on a lineNode
+            action[0].value = action[1]
+            lineIndex = action[2]
+            line = action[0]
+            # move to that place
+
+        elif isinstance(action[0], str):
+            if action[0] == 'delete':
+                line = action[1].lastNode
+                line.value = action[2]
+                lineIndex = len(line.value)-2
+                editorUtil.deleteLine(editorObj, action[1], trueDelete=True)
+
+        editorObj.moveToNode(line, lineIndex)
 
     def undo(self, editorObj):
         """
@@ -56,7 +70,10 @@ class UndoRedoStack:
         if len(self.undoStack) == 0:
             return  # nothing to undo
         action = self.undoStack.pop()
-        self.redoStack.append(self.getCurrentState(editorObj, action[0]))
+        if isinstance(action[0], LineNode):
+            self.redoStack.append(self.getCurrentState(editorObj, action[0]))
+        elif isinstance(action[0], str):
+            self.redoStack.append(('insert', action[1].lastNode))
         self.doAction(action, editorObj)
 
     def redo(self, editorObj):

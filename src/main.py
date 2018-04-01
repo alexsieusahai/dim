@@ -738,6 +738,10 @@ class MainScr:
                         self.currentLine = editorUtil.deleteLine(self, self.currentLine)
 
                 elif ord(c) == 10:   # enter
+
+                    # keeping for undo
+                    undoValue = self.currentLine.value
+
                     if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0] -2:
                         self.topLine = self.topLine.nextNode
                     self.currentLine = editorUtil.insertLine(self, self.currentLine)
@@ -754,6 +758,9 @@ class MainScr:
                             i += 1
                         else:
                             break
+
+                    # handle undo/redo
+                    self.undoRedoStack.pushOntoUndo(['delete', self.currentLine, undoValue])
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
 
