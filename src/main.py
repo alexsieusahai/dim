@@ -6,6 +6,7 @@ import subprocess  # for BANG!
 import curses  # drawing the editor
 
 from dataStructures.lineLinkedList import LineLinkedList
+from dataStructures.undoRedoStack import UndoRedoStack
 from Util.initCurses import initColors, initScreens
 from constants import State, WindowConstants
 import Util.fileUtil as fileUtil
@@ -23,7 +24,7 @@ class MainScr:
 
     def __init__(self):
         """
-        Inits screens, curses stuff, colors, etc
+        Inits screens, curses stuff, colors, attributes, etc
         """
         # set up curses stuff
         initScreens(self, WindowConstants)
@@ -53,7 +54,6 @@ class MainScr:
         self.setState(State.NORMAL)
         self.runFileNavigation(breakEarly=True)
         self.matchBuffer = []
-        self.drawAndRefreshFileNavigation()
 
         # grabbing the lines from the file
         self.fileName = 'test.py'
@@ -76,6 +76,9 @@ class MainScr:
         self.topLine = self.currentLine = self.lineLinkedList.start
         self.topLineCount = 1  # number to draw for topLine
         self.currentLineIndex = 0
+
+        # set up undo redo stack
+        self.undoRedoStack = UndoRedoStack()
 
         self.drawLines(self.editorscr, self.topLine)
         self.drawLineNumbers()
@@ -127,7 +130,14 @@ class MainScr:
     def getState(self):
         return self.state
 
-    def moveTo(self, lineNumber, lineIndex):
+    def moveToNode(self, line, lineIndex):
+        self.currentLine = self.topLine = self.lineLinkedList.start
+        while self.currentLine != line:
+            editorMovement.moveDown(self)
+        self.currentLineIndex = lineIndex
+        pass
+
+    def moveToIndex(self, lineNumber, lineIndex):
         self.currentLine = self.topLine = self.lineLinkedList.start
         for i in range(lineNumber-1):
             editorMovement.moveDown(self)
@@ -386,13 +396,14 @@ class MainScr:
         """
         while True:
 
+            # set everything up for the run
             syntaxHighlighting.setColors(self, self.colorMap)
-
             self.drawStatus()  # draw the status bar text on status bar
             self.drawLines(self.editorscr, self.topLine)
             self.drawLineNumbers()
             (y, x) = self.editorscr.getyx()  # get cursor position relative to top left
             repeats = 1 if self.commandRepeats == '' else int(self.commandRepeats)
+
             if self.state == State.NORMAL:
                 c = chr(self.editorscr.getch())  # get a key
 
@@ -603,7 +614,7 @@ class MainScr:
                     # go to first match
                     if self.matchBuffer:
                         (lineNumber, lineIndex) = self.matchBuffer[0]
-                        self.moveTo(lineNumber, lineIndex)
+                        self.moveToIndex(lineNumber, lineIndex)
                         temp = self.matchBuffer[0]
                         del self.matchBuffer[0]
                         self.matchBuffer.append(temp)
@@ -632,14 +643,29 @@ class MainScr:
                         self.deleteMode = True
                     continue
 
+                elif c == 'u':  # undo
+                    self.undoRedoStack.undo(self)
+
+                elif c == chr(18):  # ctrl + r
+                    self.undoRedoStack.redo(self)
+
                 elif c in [str(x) for x in range(10)]:
                     self.commandRepeats += str(c)
                     continue
 
                 elif c == 'i':
+                    # put currentLine and its value onto undo stack
+                    self.undoRedoStack.pushOntoUndo((self.currentLine,
+                                                    self.currentLine.value,
+                                                    self.currentLineIndex))
                     self.setState(State.INSERT)
 
                 elif c == 'a':
+                    # put currentLine and its value onto undo stack
+                    self.undoRedoStack.pushOntoUndo((self.currentLine,
+                                                    self.currentLine.value,
+                                                    self.currentLineIndex))
+
                     if editorUtil.getNextChar(self) == '\n':
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
@@ -651,6 +677,12 @@ class MainScr:
 
                 elif c == 'A':
                     editorUtil.moveToEndOfLine(self)
+
+                    # put currentLine and its value onto undo stack
+                    self.undoRedoStack.pushOntoUndo((self.currentLine,
+                                                    self.currentLine.value,
+                                                    self.currentLineIndex))
+
                     if editorUtil.getNextChar(self) == '\n':
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
@@ -687,6 +719,10 @@ class MainScr:
                 c = chr(self.editorscr.getch())
 
                 if ord(c) == 27:  # escape
+                    # save the value and push onto redo
+                    self.undoRedoStack.redoStack.insert(0, (self.currentLine,
+                                                    self.currentLine.value,
+                                                    self.currentLineIndex))
                     editorMovement.moveLeft(self)
                     self.setState(State.NORMAL)
 
