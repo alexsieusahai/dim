@@ -642,16 +642,19 @@ class MainScr:
                     continue
 
                 elif c == 'u':  # undo
-                    self.undoRedoStack.undo(self)
+                    #self.undoRedoStack.undo(self)
+                    raise NotImplementedError
 
                 elif c == chr(18):  # ctrl + r
-                    self.undoRedoStack.redo(self)
+                    #self.undoRedoStack.redo(self)
+                    raise NotImplementedError
 
                 elif c in [str(x) for x in range(10)]:
                     self.commandRepeats += str(c)
                     continue
 
                 elif c == 'i':
+<<<<<<< HEAD
                     self.undoRedoStack.pushOntoUndo(self)
                     # put currentLine and its value onto undo stack
                     self.setState(State.INSERT)
@@ -659,6 +662,11 @@ class MainScr:
                 elif c == 'a':
                     self.undoRedoStack.pushOntoUndo(self)
                     # put currentLine and its value onto undo stack
+=======
+                    self.setState(State.INSERT)
+
+                elif c == 'a':
+>>>>>>> df0fbb246f0e08c9e888d9aff980bcb80f5dc111
                     if editorUtil.getNextChar(self) == '\n':
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
@@ -670,7 +678,10 @@ class MainScr:
 
                 elif c == 'A':
                     editorUtil.moveToEndOfLine(self)
+<<<<<<< HEAD
                     self.undoRedoStack.pushOntoUndo(self)
+=======
+>>>>>>> df0fbb246f0e08c9e888d9aff980bcb80f5dc111
                     if editorUtil.getNextChar(self) == '\n':
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)

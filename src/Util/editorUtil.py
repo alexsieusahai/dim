@@ -67,15 +67,17 @@ def deleteLine(editorObj, lineNode, trueDelete=False):
         return returnNode.nextNode
     return returnNode
 
-def insertLine(editorObj, lineNode):
+def insertLine(editorObj, lineNode, cleanInsert=False):
     """
     Inserts a line just like how vim does
     ... -> lineNode.lastNode -> lineNode -> lineNode.nextNode -> ...
     ... -> lineNode.lastNode -> lineNode -> newNode -> lineNode.nextNode -> ...
     """
-
-    newLineValue = editorObj.currentLine.value[editorObj.currentLineIndex:]
-    editorObj.currentLine.value = editorObj.currentLine.value[:editorObj.currentLineIndex]+'\n'
+    if cleanInsert:
+        newLineValue = '\n'
+    else:
+        newLineValue = editorObj.currentLine.value[editorObj.currentLineIndex:]
+        editorObj.currentLine.value = editorObj.currentLine.value[:editorObj.currentLineIndex]+'\n'
     newNode = LineNode(newLineValue, editorObj.currentLine)
     # lastNode of newNode is set to editorObj.currentLine
 
