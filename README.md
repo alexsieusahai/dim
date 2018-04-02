@@ -48,6 +48,10 @@ Super similar to `vim` bindings, so if you use `vim` bindings a lot you'll be (m
 * `/` to search for a substring in the current text and store it in a buffer
     * `n` to cycle through the search buffer
 
+### Other features accessed from Normal mode
+* `u` while in Normal mode to undo
+* `ctrl+r` while in Normal mode to redo
+
 ### Insert Mode
 Type as normally! To exit insert mode and go back to `NORMAL` mode, press `ESC`.
 
