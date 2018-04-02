@@ -127,9 +127,6 @@ class MainScr:
         else:
             return 'UNKNOWN_STATE'
 
-    def getState(self):
-        return self.state
-
     def moveToNode(self, line, lineIndex):
         self.currentLine = self.topLine = self.lineLinkedList.start
         while self.currentLine != line:
@@ -153,6 +150,7 @@ class MainScr:
         # draw line numbers
         lineToDraw = self.topLine
         if self.topLine is None:
+            print('found self.topLine as None')
             assert(False)
         y = 0
         lineIndex = self.topLineCount
@@ -654,18 +652,13 @@ class MainScr:
                     continue
 
                 elif c == 'i':
+                    self.undoRedoStack.pushOntoUndo(self)
                     # put currentLine and its value onto undo stack
-                    self.undoRedoStack.pushOntoUndo((self.currentLine,
-                                                    self.currentLine.value,
-                                                    self.currentLineIndex))
                     self.setState(State.INSERT)
 
                 elif c == 'a':
+                    self.undoRedoStack.pushOntoUndo(self)
                     # put currentLine and its value onto undo stack
-                    self.undoRedoStack.pushOntoUndo((self.currentLine,
-                                                    self.currentLine.value,
-                                                    self.currentLineIndex))
-
                     if editorUtil.getNextChar(self) == '\n':
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
@@ -677,12 +670,7 @@ class MainScr:
 
                 elif c == 'A':
                     editorUtil.moveToEndOfLine(self)
-
-                    # put currentLine and its value onto undo stack
-                    self.undoRedoStack.pushOntoUndo((self.currentLine,
-                                                    self.currentLine.value,
-                                                    self.currentLineIndex))
-
+                    self.undoRedoStack.pushOntoUndo(self)
                     if editorUtil.getNextChar(self) == '\n':
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
@@ -719,10 +707,6 @@ class MainScr:
                 c = chr(self.editorscr.getch())
 
                 if ord(c) == 27:  # escape
-                    # save the value and push onto redo
-                    self.undoRedoStack.redoStack.insert(0, (self.currentLine,
-                                                    self.currentLine.value,
-                                                    self.currentLineIndex))
                     editorMovement.moveLeft(self)
                     self.setState(State.NORMAL)
 
@@ -738,9 +722,6 @@ class MainScr:
                         self.currentLine = editorUtil.deleteLine(self, self.currentLine)
 
                 elif ord(c) == 10:   # enter
-
-                    # keeping for undo
-                    undoValue = self.currentLine.value
 
                     if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0] -2:
                         self.topLine = self.topLine.nextNode
@@ -759,8 +740,6 @@ class MainScr:
                         else:
                             break
 
-                    # handle undo/redo
-                    self.undoRedoStack.pushOntoUndo(['delete', self.currentLine, undoValue])
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
 
@@ -777,7 +756,6 @@ class MainScr:
                 raise NotImplementedError
 
             elif self.state == State.COMMAND_LINE:
-                # what about if user presses escape?
                 cmd = editorUtil.getCmd(self)
 
                 if cmd == chr(27):  # escape character

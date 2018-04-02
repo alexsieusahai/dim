@@ -1,5 +1,9 @@
+from dataStructures.lineLinkedList import LineLinkedList
 from dataStructures.lineNode import LineNode
-import Util.editorUtil as editorUtil
+
+# best solution isn't implemented yet; haven't figured out how to deal with
+# deleting lines; maybe a really nice solution exists but this will work fine 
+# unless the file is thousands of lines long
 
 class UndoRedoStack:
     """
@@ -10,83 +14,104 @@ class UndoRedoStack:
         self.undoStack = []
         self.redoStack = []
 
-    def pushOntoUndo(self, action):
+    def add(beforeNode, afterNode, betweenLinkedList):
         """
-        Pushes an action onto the undo stack.
-        Called whenever an action is completed.
+        Add in the betweenLinkedList to beforeNode and afterNode
+        like this:
+        ... <-> beforeNode <->  afterNode <-> ...
+        To
+        ... <-> beforeNode <-> btwLL.start <-> ... <-> btwLL.end <-> afterNode <-> ...
         """
-        self.undoStack.append(action)
+        beforeNode.nextNode = betweenLinkedList.start
+        betweenLinkedList.start.lastNode = beforeNode
+        betweenLinkedList.end.nextNode = afterNode
+        afterNode.lastNode = betweenLinkedList.end
 
-    def pushOntoRedo(self, action):
+    def remove(beforeNode, afterNode):
         """
-        Pushes an action onto the redo stack.
-        Called whenever you want to save an action
-        to redo.
+        Remove all of the data in between beforeNode and afterNode
+        Don't have to garbage collect since python will handle it for me?
+        ... <-> beforeNode <-> code in between <-> afterNode <-> ...
+        To
+        ... <-> beforeNode <-> afterNode <-> ...
         """
-        self.redoStack.append(action)
+        beforeNode.nextNode = afterNode
+        afterNode.lastNode = beforeNode
 
-    def getCurrentState(self, editorObj, linePointer):
+    def pushOntoUndo(self, editorObj):
         """
-        Helper function for undo and redo.
-
-        Get the current line value and the current index at a line
-        and return it for other use.
+        copy the linked list, and store it on the undo stack
+        stores a tuple of (linkedlist, currentline, topline)
         """
-        currentValue = linePointer.value
-        currentIndex = editorObj.currentLineIndex
-        return ((linePointer, currentValue, currentIndex))
+        self.undoStack.append(copy(editorObj))
 
-    def doAction(self, action, editorObj):
+    def pushOntoRedo(self, editorObj):
         """
-        Helper function for undo and redo;
-        does the action supplied to editorObj.
+        copy the linked list, and store it on the redo stack
+        stores a tuple of (linkedlist, currentline, topline)
         """
-        # case 1; tuple that looks like
-        # (lineNode, lineNode.value)
-        if isinstance(action[0], LineNode):
-            # if we are operating on a lineNode
-            action[0].value = action[1]
-            lineIndex = action[2]
-            line = action[0]
-            # move to that place
-
-        elif isinstance(action[0], str):
-            if action[0] == 'delete':
-                line = action[1].lastNode
-                line.value = action[2]
-                lineIndex = len(line.value)-2
-                editorUtil.deleteLine(editorObj, action[1], trueDelete=True)
-
-        editorObj.moveToNode(line, lineIndex)
+        self.redoStack.append(copy(editorObj))
 
     def undo(self, editorObj):
         """
-        undoStack has the actions that editorObj
-        has executed and kept saved.
-
-        Does the inverse of the last action to
-        editorObj, then puts the action onto the redo stack
+        Pop undoStack and keep it as alist
+        Push the current lineLinkedList onto redo
+        Make alist editorObj.lineLinkedList
+        uses a tuple of (linkedlist, currentline, topline)
         """
         if len(self.undoStack) == 0:
-            return  # nothing to undo
-        action = self.undoStack.pop()
-        if isinstance(action[0], LineNode):
-            self.redoStack.append(self.getCurrentState(editorObj, action[0]))
-        elif isinstance(action[0], str):
-            self.redoStack.append(('insert', action[1].lastNode))
-        self.doAction(action, editorObj)
+            return
+        (alist, curline, topline) = self.undoStack.pop()
+        self.pushOntoRedo(editorObj)
+        editorObj.lineLinkedList = alist
+        editorObj.currentLine = curline
+        editorObj.topLine = topline
 
     def redo(self, editorObj):
         """
-        redoStack has the actions that undo has put
-        onto the redoStack.
-
-        Does the last action on redo stack, pops it off
-        the redo stack and puts the inverse of that action into
-        the undo stack.
+        Pop redoStack and keep it as alist
+        Push the current lineLinkedList onto undo
+        Make alist editorObj.lineLinkedList
+        uses a tuple of (linkedlist, currentline, topline)
         """
         if len(self.redoStack) == 0:
-            return  # nothing to redo
-        action = self.redoStack.pop()
-        self.undoStack.append(self.getCurrentState(editorObj, action[0]))
-        self.doAction(action, editorObj)
+            return
+        (alist, curline, topline) = self.redoStack.pop()
+        self.pushOntoUndo(editorObj)
+        editorObj.lineLinkedList = alist
+        editorObj.currentLine = curline
+        editorObj.topLine = topline
+
+def copy(editorObj):
+    """
+    Copy aLinkedList and return a pointer to it
+    """
+    currentLine = topLine = None
+    walk = editorObj.lineLinkedList.start
+    newList = LineLinkedList([])
+    lastNode = None
+    while walk != None:
+        node = LineNode(walk.value, None)
+        if node.value == editorObj.topLine.value:
+            topLine = node
+
+        if node.value == editorObj.currentLine.value:
+            currentLine = node
+        if newList.start is None:
+             newList.start = node
+        node.lastNode = lastNode
+        if lastNode != None:
+            lastNode.nextNode = node
+        lastNode = node
+        newList.length += 1
+
+        walk = walk.nextNode
+        if walk is None:
+            break
+
+    newList.end = lastNode
+    if currentLine is None:
+        currentLine = newList.start
+    if topLine is None:
+        topLine = newList.start
+    return (newList, currentLine, topLine)
