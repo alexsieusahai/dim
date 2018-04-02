@@ -54,13 +54,6 @@ IMPORTANT:
 Implement `VISUAL` mode
 Implement copy paste containers tied to each key (not in vim but would be super awesome)
 
-************
-Bugs:
-************
-
-- Opening an empty file results in an error
-	- Easy fix, if start is None then insert a line at the start
-
 *********************
 ONCE IT'S FINISHED
 *********************
