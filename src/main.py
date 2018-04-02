@@ -644,28 +644,21 @@ class MainScr:
                     continue
 
                 elif c == 'u':  # undo
-                    self.undoRedoStack.undo(self)
+                    #self.undoRedoStack.undo(self)
+                    raise NotImplementedError
 
                 elif c == chr(18):  # ctrl + r
-                    self.undoRedoStack.redo(self)
+                    #self.undoRedoStack.redo(self)
+                    raise NotImplementedError
 
                 elif c in [str(x) for x in range(10)]:
                     self.commandRepeats += str(c)
                     continue
 
                 elif c == 'i':
-                    # put currentLine and its value onto undo stack
-                    self.undoRedoStack.pushOntoUndo((self.currentLine,
-                                                    self.currentLine.value,
-                                                    self.currentLineIndex))
                     self.setState(State.INSERT)
 
                 elif c == 'a':
-                    # put currentLine and its value onto undo stack
-                    self.undoRedoStack.pushOntoUndo((self.currentLine,
-                                                    self.currentLine.value,
-                                                    self.currentLineIndex))
-
                     if editorUtil.getNextChar(self) == '\n':
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
@@ -677,12 +670,6 @@ class MainScr:
 
                 elif c == 'A':
                     editorUtil.moveToEndOfLine(self)
-
-                    # put currentLine and its value onto undo stack
-                    self.undoRedoStack.pushOntoUndo((self.currentLine,
-                                                    self.currentLine.value,
-                                                    self.currentLineIndex))
-
                     if editorUtil.getNextChar(self) == '\n':
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
@@ -719,10 +706,6 @@ class MainScr:
                 c = chr(self.editorscr.getch())
 
                 if ord(c) == 27:  # escape
-                    # save the value and push onto redo
-                    self.undoRedoStack.redoStack.insert(0, (self.currentLine,
-                                                    self.currentLine.value,
-                                                    self.currentLineIndex))
                     editorMovement.moveLeft(self)
                     self.setState(State.NORMAL)
 
@@ -759,8 +742,6 @@ class MainScr:
                         else:
                             break
 
-                    # handle undo/redo
-                    self.undoRedoStack.pushOntoUndo(['delete', self.currentLine, undoValue])
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
 

@@ -48,14 +48,29 @@ class UndoRedoStack:
             action[0].value = action[1]
             lineIndex = action[2]
             line = action[0]
-            # move to that place
 
+        # case
         elif isinstance(action[0], str):
             if action[0] == 'delete':
                 line = action[1].lastNode
                 line.value = action[2]
-                lineIndex = len(line.value)-2
                 editorUtil.deleteLine(editorObj, action[1], trueDelete=True)
+                lineIndex = len(line.value)-2
+                line.colors = []
+                for c in line.value:
+                    line.colors.append(0)
+            if action[0] == 'insert':
+                line = action[1]
+                line.value = action[3]
+                line.colors = []
+                for c in line.value:
+                    line.colors.append(0)
+                lineIndex = 0
+                editorUtil.insertLine(editorObj, action[1], cleanInsert=True)
+                line.nextNode.value = action[2]
+                line.nextNode.colors = []
+                for c in line.nextNode.value:
+                    line.nextNode.colors.append(0)
 
         editorObj.moveToNode(line, lineIndex)
 
@@ -73,7 +88,9 @@ class UndoRedoStack:
         if isinstance(action[0], LineNode):
             self.redoStack.append(self.getCurrentState(editorObj, action[0]))
         elif isinstance(action[0], str):
-            self.redoStack.append(('insert', action[1].lastNode))
+            if action[0] == 'delete':
+                self.redoStack.append(('insert', action[1].lastNode,
+                                    action[1].value, action[1].lastNode.value))
         self.doAction(action, editorObj)
 
     def redo(self, editorObj):
@@ -88,5 +105,9 @@ class UndoRedoStack:
         if len(self.redoStack) == 0:
             return  # nothing to redo
         action = self.redoStack.pop()
-        self.undoStack.append(self.getCurrentState(editorObj, action[0]))
+        if isinstance(action[0], LineNode):
+            self.undoStack.append(self.getCurrentState(editorObj, action[0]))
+        elif isinstance(action[0], str):
+            if action[0] == 'insert':
+                self.undoStack.append(['delete', action[1].nextNode, ''])
         self.doAction(action, editorObj)
