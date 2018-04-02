@@ -57,7 +57,7 @@ class MainScr:
         self.matchBuffer = []
 
         # grabbing the lines from the file
-        self.fileName = 'test.py'
+        self.fileName = 'main.py'
         self.lineLinkedList = fileUtil.loadFile(self.fileName)
 
         # make and store the savefile here
@@ -590,9 +590,16 @@ class MainScr:
                             self.drawLineNumbers()
 
                 elif c == 'g':  # go to beginning of file
-                    self.currentLine = self.topLine = self.lineLinkedList.start
+                    self.currentLine = self.lineLinkedList.start
+                    self.topLine = self.lineLinkedList.start
+                    self.topLineCount = 1
                     for i in range(repeats-1):
                         editorMovement.moveDown(self)
+                    if repeats > 20:
+                        cursesUtil.kill(self)
+                        print(repeats)
+                        assert(False)
+
 
                 elif c == '/':  # search function
                     patternToFind = editorUtil.getCmd(self, altDisplayChar='/')

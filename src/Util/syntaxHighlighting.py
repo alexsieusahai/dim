@@ -21,11 +21,14 @@ def setColors(editorObj, colorMap):
     to a certain color.
 
     Use this with editorscr only!
+
+    Notice that this won't work perfectly; there will be times that
+    the syntax highlighting won't be perfect. This is a decided tradeoff;
+    the popular text editors don't seem to have a solution.
     """
     pylex = Python3Lexer()
     # lets build the string to parse
 
-    # this solution is too slow on big files
     syntax = ''
     walk = editorObj.lineLinkedList.start
     y = 0
@@ -40,8 +43,7 @@ def setColors(editorObj, colorMap):
             break
         walk = walk.nextNode
 
-    walk = editorObj.lineLinkedList.start
-
+    walk = editorObj.lineLinkedList.start 
     i = 0 # index of where i am walking through the string
 
     for token in pylex.get_tokens(syntax):
