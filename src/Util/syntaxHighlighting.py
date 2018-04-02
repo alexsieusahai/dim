@@ -1,9 +1,12 @@
 import pygments
 from pygments.lexers import Python3Lexer
-from constants import SyntaxColors, Colors
 
-# testing stuff
+from constants import SyntaxColors, Colors
+import Util.editorUtil as editorUtil
+
+# testing
 from Util.cursesUtil import kill
+
 
 def setColors(editorObj, colorMap):
     """
@@ -16,24 +19,30 @@ def setColors(editorObj, colorMap):
 
     colorMap is a dictionary which maps the kind of syntax
     to a certain color.
+
+    Use this with editorscr only!
     """
     pylex = Python3Lexer()
     # lets build the string to parse
+
+    # this solution is too slow on big files
     syntax = ''
     walk = editorObj.lineLinkedList.start
-    while walk != None:
+    y = 0
+    increaseY = False
+    while walk is not None:
+        if walk == editorObj.currentLine:
+            increaseY = True
         syntax += walk.value
+        if increaseY:
+            y += editorUtil.lineHeight(editorObj.editorscr, walk)
+        if y > editorObj.editorscr.getmaxyx()[0]:
+            break
         walk = walk.nextNode
 
     walk = editorObj.lineLinkedList.start
 
     i = 0 # index of where i am walking through the string
-
-    #kill(editorObj)
-    #for token in pylex.get_tokens(syntax):
-    #    print(token)
-    #    print('\r',end='')
-    #assert(False)
 
     for token in pylex.get_tokens(syntax):
 
