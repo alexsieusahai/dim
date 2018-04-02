@@ -2,31 +2,25 @@
 MILESTONES:
 *****************
 
-SATURDAY TODO:
+SUNDAY TODO:
 	- If `Piece Table` looks good, implement `Piece Table`
 	    - Otherwise, implement `Rope` or `Gap Buffer`
         - Probably gonna implement rope
 	- Get `dimtutor` set up and going
     - Implement deletion `b`
-    - figure out relative imports
-	
-SUNDAY TODO:
-	- Implement `undo` and `redo` buffer (trivial with `Piece Table`)
+    - Implement command saving (push it into a doubly linked list and let the user 
+            navigate using uparrow and downarrow)
 	- Implement a buffer for jumps (use a doubly linked list so you can jump forward and backward)
-	- Implement a buffer for commands that were previously called (same as jumps)
+    - Implement macros (use concept similar to undoRedoStack)
 	
 MONDAY TODO:
 	- Implement emergency file saving
 	- Compress that file upon exiting using Huffman Compression
 
 TUESDAY TODO:
-	- Implement a Suffix Trie for spellcheck
 	- Implement minimap (look at how the one in vim is implemented)
 	
 WEDNESDAY TODO:
-	- Refactor jumps ('w','e','b') so it's a lot faster (easy fix), 
-	    - implementation of `editorUtil.getCharAtLineWithIndex(line,index)
-		will make it easy
 	- Work on piping for console output (so you can see what you're typing)
 		- Set the output to a linked list and use drawlines() to draw it, and traverse it using moveUp, moveDown, etc
 		- Exit the output with a defined key, maybe `ESC` or something
@@ -41,7 +35,6 @@ FRIDAY TODO:
 		
 SATURDAY TODO:
 	- Day/Night color mode, `redify` mode for increased red light exposure at night (like f.lux)
-	- Implement inertial scrolling
 	
 SUNDAY TODO:
 	- Implement as much of `VISUAL` mode as you can
@@ -57,13 +50,7 @@ TUESDAY TODO:
 
 IMPORTANT:
     - Make tests for all data structures and algorithms that run if that python script is running in main namespace 
-	- might have to do some refactoring with the imports for that
-    - file system movement is a mess, see if you can get rid of y and just use knowledge of which dir is the current dir to draw everything
 
-Can do this one whenever, 0 thought required
-    - Switch to a more pastel color scheme
-
-Add functionality to do an operation multiple times (like `3w`)
 Implement `VISUAL` mode
 Implement copy paste containers tied to each key (not in vim but would be super awesome)
 
@@ -83,17 +70,11 @@ Prettify the `README.md` page, with gifs and screenshots and a link to a manual
 WISHLIST
 ****************************
 
-Fix up console output (for example `python3` console doesn't work properly at all)
-    - Set up console input
-
 Spellcheck
     - Factor oracle, suffix trie (two modes?)
 
 Inertial Scrolling
     - have to make a lot of stuff faster before doing this
-
-Konami Code easter egg
-
 
 ******
 IMPORTANT
@@ -122,3 +103,5 @@ Stuff to mention during 275 presentation:
     Talk a little bit about how you structured the file system to keep things cleanish
 
     Talk about binary search implementation for file navigation
+
+    Talk about undo redo buffer a little
