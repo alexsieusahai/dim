@@ -2,6 +2,7 @@ import string  # ascii, digits lists
 import os  # for file subsystem (os.chdir, os.getcwd, etc)
 import sys  # for sys.exit
 import subprocess  # for BANG!
+import select # polling
 
 import curses  # drawing the editor
 
@@ -251,10 +252,11 @@ class MainScr:
         self.statusscr.addstr(checkStr)
         self.statusscr.refresh()
 
-    def outputTerminalChatter(self, process):
+    def outputTerminalChatter(self, cmd):
         """
         Output whatever process sends to stdout in real time
         """
+        process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 
         # clean the screen to prepare for output
         self.editorscr.clear()
@@ -266,12 +268,9 @@ class MainScr:
         outputStr = ''
 
         while True:
-
             out = process.stdout.read(1).decode()
             if out == '' and process.poll() is not None:
                 break
-            if out == '':
-                outputStr = process.poll()
             if out != '':
                 outputStr += out
                 consoleChatterLines = LineLinkedList(outputStr.split('\n'))
@@ -284,6 +283,7 @@ class MainScr:
                 self.drawLines(self.editorscr, self.topLine)
                 self.drawLineNumbers()
                 self.editorscr.refresh()
+
 
         # kill the pipe
         process.stdout.close()
@@ -642,12 +642,10 @@ class MainScr:
                     continue
 
                 elif c == 'u':  # undo
-                    #self.undoRedoStack.undo(self)
-                    raise NotImplementedError
+                    self.undoRedoStack.undo(self)
 
                 elif c == chr(18):  # ctrl + r
-                    #self.undoRedoStack.redo(self)
-                    raise NotImplementedError
+                    self.undoRedoStack.redo(self)
 
                 elif c in [str(x) for x in range(10)]:
                     self.commandRepeats += str(c)
@@ -788,9 +786,7 @@ class MainScr:
                             if cmd[0] == '!':
                                 cmd = cmd[1:]
 
-                            process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
-
-                            self.outputTerminalChatter(process)
+                            self.outputTerminalChatter(cmd)
 
                             # bring what we killed back to life
                             cursesUtil.birth()
