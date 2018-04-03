@@ -43,7 +43,7 @@ def setColors(editorObj, colorMap):
             break
         walk = walk.nextNode
 
-    walk = editorObj.lineLinkedList.start 
+    walk = editorObj.lineLinkedList.start
     i = 0 # index of where i am walking through the string
 
     for token in pylex.get_tokens(syntax):

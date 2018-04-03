@@ -3,17 +3,13 @@ MILESTONES:
 *****************
 
 SUNDAY TODO:
-	- If `Piece Table` looks good, implement `Piece Table`
-	    - Otherwise, implement `Rope` or `Gap Buffer`
-        - Probably gonna implement rope
+    - Implement rope
 	- Get `dimtutor` set up and going
     - Implement deletion `b`
     - Implement command saving (push it into a doubly linked list and let the user 
             navigate using uparrow and downarrow)
 	- Implement a buffer for jumps (use a doubly linked list so you can jump forward and backward)
     - Implement macros (use concept similar to undoRedoStack)
-	
-MONDAY TODO:
 	- Implement emergency file saving
 	- Compress that file upon exiting using Huffman Compression
 

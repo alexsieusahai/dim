@@ -81,8 +81,10 @@ class MainScr:
         # set up undo redo stack
         self.undoRedoStack = UndoRedoStack()
 
+        # draw everything for first iteration
         self.drawLines(self.editorscr, self.topLine)
         self.drawLineNumbers()
+        syntaxHighlighting.setColors(self, self.colorMap)
         self.setState(State.NORMAL)
         self.commandRepeats = ''
 
@@ -395,10 +397,6 @@ class MainScr:
         while True:
 
             # set everything up for the run
-            syntaxHighlighting.setColors(self, self.colorMap)
-            self.drawStatus()  # draw the status bar text on status bar
-            self.drawLines(self.editorscr, self.topLine)
-            self.drawLineNumbers()
             (y, x) = self.editorscr.getyx()  # get cursor position relative to top left
             repeats = 1 if self.commandRepeats == '' else int(self.commandRepeats)
 
@@ -595,11 +593,6 @@ class MainScr:
                     self.topLineCount = 1
                     for i in range(repeats-1):
                         editorMovement.moveDown(self)
-                    if repeats > 20:
-                        cursesUtil.kill(self)
-                        print(repeats)
-                        assert(False)
-
 
                 elif c == '/':  # search function
                     patternToFind = editorUtil.getCmd(self, altDisplayChar='/')
@@ -708,6 +701,12 @@ class MainScr:
 
                 self.deleteMode = False
                 self.commandRepeats = ''
+
+                # draw everything again
+                syntaxHighlighting.setColors(self, self.colorMap)
+                self.drawStatus()  # draw the status bar text on status bar
+                self.drawLines(self.editorscr, self.topLine)
+                self.drawLineNumbers()
 
 
             if self.state == State.INSERT or self.state == State.APPEND:
