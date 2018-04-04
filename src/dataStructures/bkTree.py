@@ -30,7 +30,7 @@ class bk_tree(object):
         for word in words:
             self.add(word)
 
-    def find(self, word, max_distance, node=self.root):
+    def find(self, word, max_distance, node):
         """
         Find a word within the tree that is within [0, maxDistance] distance
         from word, and return a list of tuples (item, distance) ordered by distance
@@ -39,12 +39,15 @@ class bk_tree(object):
         if node is None:
             return []  # empty so no matches possible
 
+        print('im looking at',node)
         possible_matches = []
         (node_val, children) = node
 
         distance = levenshtein_distance(word, node_val)
+        print('the ld for '+word+' and '+node_val+' is ',distance)
         if distance <= max_distance:
-            possible_matches.append(word)
+            possible_matches.append(node_val)
+            print('adding',node_val,'to possible_matches')
 
         low_bound = distance - max_distance
         if low_bound < 0:
@@ -52,7 +55,9 @@ class bk_tree(object):
         high_bound = distance + max_distance
 
         while low_bound < high_bound:  # walk through the node for any matches
-            next_node = children.get(distance)
+            next_node = children.get(low_bound)
+            print('low bound is',low_bound)
+            print('next node is '+str(next_node))
             temp = []
             if next_node:
                 temp = self.find(word, max_distance, node=next_node)
@@ -69,16 +74,35 @@ class bk_tree(object):
         node = self.root
         if node is None:  # haven't built up the tree yet
             self.root = (word, {})
+            print('setting root to ',word)
             return
 
         while node is not None:
             # walk through the tree
             node_val, children = node
             distance = levenshtein_distance(word, node_val)
-            node = children.get(distance) # walk down that way
+            node = children.get(distance)  # walk down that way
 
         children[distance] = (word, {})
+        print('setting child of',node_val,'with value',distance,'to the word',word)
 
+def levenshtein_distance(word, node_val):
+    """
+    Finds and returns the levenshtein distance between word and node_val
+    """
+    if word == '':
+        return len(node_val)
+    if node_val == '':
+        return len(word)
+    if word[-1] == node_val[-1]:
+        cost = 0
+    else:
+        cost = 1
+    return min([levenshtein_distance(word[:-1], node_val)+1,
+                                levenshtein_distance(word, node_val[:-1])+1,
+                                levenshtein_distance(word[:-1], node_val[:-1]) + cost])
 
 if __name__ == "__main__":
-    print('main')
+    bktree = bk_tree(['help','hell', 'kelt'])
+    print(bktree.find('kel', 1, bktree.root))
+
