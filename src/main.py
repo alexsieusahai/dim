@@ -591,6 +591,7 @@ class MainScr:
                     self.currentLine = self.lineLinkedList.start
                     self.topLine = self.lineLinkedList.start
                     self.topLineCount = 1
+                    y = self.editorscr.getyx()[0]
                     for i in range(repeats-1):
                         editorMovement.moveDown(self)
 
@@ -659,7 +660,6 @@ class MainScr:
                 elif c == 'a':
                     self.undoRedoStack.pushOntoUndo(self)
                     # put currentLine and its value onto undo stack
-                    self.setState(State.INSERT)
                     if editorUtil.getNextChar(self) == '\n':
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
@@ -728,8 +728,10 @@ class MainScr:
                         # delete the line
                         self.currentLine = editorUtil.deleteLine(self, self.currentLine)
 
-                elif ord(c) == 10:   # enter
+                    self.drawLines(self.editorscr, self.topLine)
+                    self.drawLineNumbers()
 
+                elif ord(c) == 10:   # enter
                     if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0] -2:
                         self.topLine = self.topLine.nextNode
                     self.currentLine = editorUtil.insertLine(self, self.currentLine)
