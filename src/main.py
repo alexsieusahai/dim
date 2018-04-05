@@ -82,9 +82,9 @@ class MainScr:
         self.undoRedoStack = UndoRedoStack()
 
         # draw everything for first iteration
-        self.drawLines(self.editorscr, self.topLine)
-        self.drawLineNumbers()
         syntaxHighlighting.setColors(self, self.colorMap)
+        self.drawLineNumbers()
+        self.drawLines(self.editorscr, self.topLine)
         self.setState(State.NORMAL)
         self.commandRepeats = ''
 

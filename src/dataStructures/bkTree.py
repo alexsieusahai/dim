@@ -16,7 +16,7 @@ class bk_tree(object):
     find
     """
 
-    def __init__(self, words=[]):
+    def __init__(self):
         """
         Initialize a bk tree for spellchecking with a wordlist.
         This bk tree uses Levenshtein distance.
@@ -25,10 +25,12 @@ class bk_tree(object):
         The idea is summarized below:
         Each node has one unique distance; if not, walk down the tree and add it
         to the only place that doesn't have that unique distance filled.
+
+        Gets the words from words.txt
         """
         self.root = None
-        for word in words:
-            self.add(word)
+        for word in open('words.txt'):
+            self.add(word[:-1])
 
     def find(self, word, max_distance, node):
         """
@@ -39,15 +41,15 @@ class bk_tree(object):
         if node is None:
             return []  # empty so no matches possible
 
-        print('im looking at',node)
+        #print('im looking at',node)
         possible_matches = []
         (node_val, children) = node
 
         distance = levenshtein_distance(word, node_val)
-        print('the ld for '+word+' and '+node_val+' is ',distance)
+        #print('the ld for '+word+' and '+node_val+' is ',distance)
         if distance <= max_distance:
             possible_matches.append(node_val)
-            print('adding',node_val,'to possible_matches')
+            #print('adding',node_val,'to possible_matches')
 
         low_bound = distance - max_distance
         if low_bound < 0:
@@ -56,8 +58,8 @@ class bk_tree(object):
 
         while low_bound < high_bound:  # walk through the node for any matches
             next_node = children.get(low_bound)
-            print('low bound is',low_bound)
-            print('next node is '+str(next_node))
+            #print('low bound is',low_bound)
+            #print('next node is '+str(next_node))
             temp = []
             if next_node:
                 temp = self.find(word, max_distance, node=next_node)
@@ -74,7 +76,7 @@ class bk_tree(object):
         node = self.root
         if node is None:  # haven't built up the tree yet
             self.root = (word, {})
-            print('setting root to ',word)
+            #print('setting root to ',word)
             return
 
         while node is not None:
@@ -84,7 +86,7 @@ class bk_tree(object):
             node = children.get(distance)  # walk down that way
 
         children[distance] = (word, {})
-        print('setting child of',node_val,'with value',distance,'to the word',word)
+        #print('setting child of',node_val,'with value',distance,'to the word',word)
 
 def levenshtein_distance(word, node_val):
     """
@@ -102,7 +104,5 @@ def levenshtein_distance(word, node_val):
                                 levenshtein_distance(word, node_val[:-1])+1,
                                 levenshtein_distance(word[:-1], node_val[:-1]) + cost])
 
-if __name__ == "__main__":
-    bktree = bk_tree(['help','hell', 'kelt'])
-    print(bktree.find('kel', 1, bktree.root))
-
+if __name__ == '__main__':
+    bktree = bk_tree()
