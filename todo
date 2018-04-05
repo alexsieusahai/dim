@@ -94,3 +94,9 @@ Stuff to mention during 275 presentation:
     Talk about binary search implementation for file navigation
 
     Talk about undo redo buffer a little
+
+    Talk about multiprocessing vs multithreading in python; gil, how multiprocessing avoids some of the problems of gil
+
+    Simple top down dp solution in Levenshtein distance using a bk tree
+
+    Talk briefly about bk tree (properties, insertion/addition running time is SUPER important to be sure to briefly cover this)

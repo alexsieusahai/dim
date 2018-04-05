@@ -29,8 +29,13 @@ class bk_tree(object):
         Gets the words from words.txt
         """
         self.root = None
+        self.words_in_tree = 0
         for word in open('words.txt'):
+            print(word)
             self.add(word[:-1])
+            self.words_in_tree += 1
+            if self.words_in_tree > 1000:
+                break
 
     def find(self, word, max_distance, node):
         """
@@ -88,7 +93,7 @@ class bk_tree(object):
         children[distance] = (word, {})
         #print('setting child of',node_val,'with value',distance,'to the word',word)
 
-def levenshtein_distance(word, node_val):
+def levenshtein_distance(word, node_val, memo={}):
     """
     Finds and returns the levenshtein distance between word and node_val
     """
@@ -100,9 +105,33 @@ def levenshtein_distance(word, node_val):
         cost = 0
     else:
         cost = 1
-    return min([levenshtein_distance(word[:-1], node_val)+1,
-                                levenshtein_distance(word, node_val[:-1])+1,
-                                levenshtein_distance(word[:-1], node_val[:-1]) + cost])
+    #return min([levenshtein_distance(word[:-1], node_val)+1,
+    #                            levenshtein_distance(word, node_val[:-1])+1,
+    #                            levenshtein_distance(word[:-1], node_val[:-1]) + cost])
+    # compute both early for speedup
+    short_word = word[:-1]
+    short_node_val = node_val[:-1]
+
+    if (short_word, node_val) in memo:
+        a = memo[(short_word, node_val)]
+    else:
+        a = levenshtein_distance(short_word, node_val)+1
+        memo[(short_word, node_val)] = a
+
+    if (word, short_node_val) in memo:
+        b = memo[(word, short_node_val)]
+    else:
+        b = levenshtein_distance(word, short_node_val)+1
+        memo[(word, short_node_val)] = b
+
+    if (short_word, short_node_val) in memo:
+        c = memo[(short_word, short_node_val)]
+    else:
+        c = levenshtein_distance(short_word, short_node_val) + cost
+        memo[(short_word, short_node_val)] = c
+
+    return min([a, b, c])
+
 
 if __name__ == '__main__':
     bktree = bk_tree()
