@@ -1,4 +1,4 @@
-
+import time
 
 class bk_tree(object):
     """
@@ -30,19 +30,22 @@ class bk_tree(object):
         """
         self.root = None
         self.words_in_tree = 0
-        for word in open('words.txt'):
-            print(word)
+        self.fileName = 'dataStructures/words.txt'
+        for word in open(self.fileName):
+            print(word[:-1])
             self.add(word[:-1])
             self.words_in_tree += 1
-            if self.words_in_tree > 1000:
+            if self.words_in_tree > 100:
                 break
 
-    def find(self, word, max_distance, node):
+    def find(self, word, max_distance, node=-1):
         """
         Find a word within the tree that is within [0, maxDistance] distance
         from word, and return a list of tuples (item, distance) ordered by distance
         to iterate through.
         """
+        if node == -1:  # garbage value
+            node = self.root
         if node is None:
             return []  # empty so no matches possible
 
@@ -51,7 +54,7 @@ class bk_tree(object):
         (node_val, children) = node
 
         distance = levenshtein_distance(word, node_val)
-        #print('the ld for '+word+' and '+node_val+' is ',distance)
+        print('the ld for '+word+' and '+node_val+' is ',distance)
         if distance <= max_distance:
             possible_matches.append(node_val)
             #print('adding',node_val,'to possible_matches')
@@ -93,45 +96,40 @@ class bk_tree(object):
         children[distance] = (word, {})
         #print('setting child of',node_val,'with value',distance,'to the word',word)
 
-def levenshtein_distance(word, node_val, memo={}):
+def levenshtein_distance(word, node_val):
     """
     Finds and returns the levenshtein distance between word and node_val
     """
-    if word == '':
-        return len(node_val)
-    if node_val == '':
-        return len(word)
-    if word[-1] == node_val[-1]:
-        cost = 0
-    else:
-        cost = 1
-    #return min([levenshtein_distance(word[:-1], node_val)+1,
-    #                            levenshtein_distance(word, node_val[:-1])+1,
-    #                            levenshtein_distance(word[:-1], node_val[:-1]) + cost])
-    # compute both early for speedup
-    short_word = word[:-1]
-    short_node_val = node_val[:-1]
 
-    if (short_word, node_val) in memo:
-        a = memo[(short_word, node_val)]
-    else:
-        a = levenshtein_distance(short_word, node_val)+1
-        memo[(short_word, node_val)] = a
+    memo = {}
 
-    if (word, short_node_val) in memo:
-        b = memo[(word, short_node_val)]
-    else:
-        b = levenshtein_distance(word, short_node_val)+1
-        memo[(word, short_node_val)] = b
+    # time for a closure!
+    def memo_levenshtein_distance(word, i, node_val, j):
+        if (word, i, node_val, j) in memo:
+            return memo[(word, i, node_val, j)]
 
-    if (short_word, short_node_val) in memo:
-        c = memo[(short_word, short_node_val)]
-    else:
-        c = levenshtein_distance(short_word, short_node_val) + cost
-        memo[(short_word, short_node_val)] = c
+        if len(word) - i == 0:
+            return len(node_val) - j
+        if len(node_val) - j == 0:
+            return len(word) - i
+        if word[i] != node_val[j]:
+            cost = 1
+        else:
+            cost = 0
 
-    return min([a, b, c])
+        distance = min(memo_levenshtein_distance(word, i+1, node_val, j) + 1,
+                   memo_levenshtein_distance(word, i, node_val, j+1) + 1,
+                   memo_levenshtein_distance(word, i+1, node_val, j+1) + cost)
+
+        memo[(word, i, node_val, j)] = distance
+        return distance
+
+    return memo_levenshtein_distance(word, 0, node_val, 0)
 
 
 if __name__ == '__main__':
+    startTime = time.clock()
     bktree = bk_tree()
+    endTime = time.clock()
+    print('setting up bktree took',endTime-startTime,'seconds')
+
