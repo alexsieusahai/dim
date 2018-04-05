@@ -32,7 +32,6 @@ class bk_tree(object):
         self.words_in_tree = 0
         self.fileName = 'dataStructures/words.txt'
         for word in open(self.fileName):
-            print(word[:-1])
             self.add(word[:-1])
             self.words_in_tree += 1
             if self.words_in_tree > 100:
@@ -54,7 +53,7 @@ class bk_tree(object):
         (node_val, children) = node
 
         distance = levenshtein_distance(word, node_val)
-        print('the ld for '+word+' and '+node_val+' is ',distance)
+        #print('the ld for '+word+' and '+node_val+' is ',distance)
         if distance <= max_distance:
             possible_matches.append(node_val)
             #print('adding',node_val,'to possible_matches')

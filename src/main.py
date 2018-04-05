@@ -4,7 +4,7 @@ import sys  # for sys.exit
 import subprocess  # for BANG!
 import select # polling
 import threading # lets highlight and build the spellchecker
-# as asynchronously as gil will let me
+# as asynchronously as gil (global interpreter lock) will let me
 
 import curses  # drawing the editor
 
