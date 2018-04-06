@@ -1,10 +1,8 @@
 # dim
 
 ## How to run
-Currently not totally implemented, so here's how to do it for now:
 Navigate to `.../dim/src`
 `python3 main.py`
-This will open `test.py` in the interface for you
 
 ## Usage!
 
@@ -60,6 +58,7 @@ Entering command line mode will bring you to the line at the bottom of the edito
 Available commands are:
 * `q` to quit the editor
 * `w` to save the currently edited file
+    * `w fileName` to save a file with name fileName within the current directory
 * `wq` to save and exit
 * `!` with some other commands to run them in terminal
     * `!ls` will perform the `ls` command and output to `dim`

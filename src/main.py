@@ -59,8 +59,10 @@ class MainScr:
         self.matchBuffer = []
 
         # grabbing the lines from the file
-        self.fileName = 'main.py'
-        self.lineLinkedList = fileUtil.loadFile(self.fileName)
+        #self.fileName = 'main.py'
+        #self.lineLinkedList = fileUtil.loadFile(self.fileName)
+        self.fileName = ''
+        self.lineLinkedList = LineLinkedList(['\n'])
 
         # make and store the savefile here
 
@@ -775,10 +777,23 @@ class MainScr:
                 cmd = cmd.strip(' \t\n\r')
                 # tokenize based on '|'
                 cmds = cmd.split('|')
-                for cmd in cmds:
+                for i in cmds:
                     for cmdChar in cmd:
                         if cmdChar == 'w':
-                            fileUtil.saveFile(self)
+                            args = cmd.split()
+                            # what if the fileName is ''?
+                            if self.fileName is '':
+                                if len(args) - 1 > 0:
+                                    self.fileName = args[1]
+                                    fileUtil.saveFile(self)
+                                    self.drawAndRefreshFileNavigation() 
+                                    # disp new file if one is made
+                                else:
+                                    self.statusscr.clear()
+                                    self.statusscr.addstr('Error; No file name')
+                                    self.statusscr.refresh()
+                            else:
+                                fileUtil.saveFile(self)
                         if cmdChar == 'q':
                             cursesUtil.kill(self)
                             sys.exit(0)

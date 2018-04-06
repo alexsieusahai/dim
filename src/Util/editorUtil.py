@@ -48,24 +48,27 @@ def deleteLine(editorObj, lineNode, trueDelete=False):
     ... -> lineNode.lastNode -> lineNode.nextNode -> ...
     """
 
-    if trueDelete:
-        editorObj.currentLineIndex = 0
-        lineNode.lastNode.value = lineNode.lastNode.value
-    else:
-        editorObj.currentLineIndex = len(lineNode.lastNode.value)-1
-        lineNode.lastNode.value = lineNode.lastNode.value[:-1]+lineNode.value[:-1]+'\n'
-    lineNode.lastNode.colors = lineNode.lastNode.colors[:-1]+lineNode.colors
-    lineNode.lastNode.nextNode = lineNode.nextNode
-    # handle edge case
-    if lineNode.nextNode != None:
-        lineNode.nextNode.lastNode = lineNode.lastNode
-    returnNode = lineNode.lastNode
-    del lineNode
-    editorObj.lineLinkedList.length -= 1
+    if lineNode.lastNode is not None:
+        if trueDelete:
+            editorObj.currentLineIndex = 0
+            lineNode.lastNode.value = lineNode.lastNode.value
+        else:
+            editorObj.currentLineIndex = len(lineNode.lastNode.value)-1
+            lineNode.lastNode.value = lineNode.lastNode.value[:-1]+lineNode.value[:-1]+'\n'
+        lineNode.lastNode.colors = lineNode.lastNode.colors[:-1]+lineNode.colors
+        lineNode.lastNode.nextNode = lineNode.nextNode
+        # handle edge case
+        if lineNode.nextNode != None:
+            lineNode.nextNode.lastNode = lineNode.lastNode
+        returnNode = lineNode.lastNode
+        del lineNode
+        editorObj.lineLinkedList.length -= 1
 
-    if trueDelete:
-        return returnNode.nextNode
-    return returnNode
+        if trueDelete:
+            return returnNode.nextNode
+        return returnNode
+    editorObj.currentLineIndex = 0
+    return lineNode  # don't do anything
 
 def insertLine(editorObj, lineNode, cleanInsert=False):
     """
