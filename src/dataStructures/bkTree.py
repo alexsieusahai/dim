@@ -34,7 +34,7 @@ class bk_tree(object):
         for word in open(self.fileName):
             self.add(word[:-1])
             self.words_in_tree += 1
-            if self.words_in_tree > 100:
+            if self.words_in_tree > 1000:
                 break
 
     def find(self, word, max_distance, node=-1):
