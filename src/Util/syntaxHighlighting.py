@@ -26,7 +26,7 @@ def setColors(editorObj, colorMap):
     the syntax highlighting won't be perfect. This is a decided tradeoff;
     the popular text editors don't seem to have a solution.
     """
-    pylex = Python3Lexer()
+    pylex = Python3Lexer(stripnl = False, stripall=False)
     # lets build the string to parse
 
     syntax = ''
@@ -45,6 +45,11 @@ def setColors(editorObj, colorMap):
 
     walk = editorObj.lineLinkedList.start
     i = 0 # index of where i am walking through the string
+
+    #kill(editorObj)
+    #for token in pylex.get_tokens(syntax):
+    #    print(token,end='\r\n')
+    #assert(False)
 
     for token in pylex.get_tokens(syntax):
 
