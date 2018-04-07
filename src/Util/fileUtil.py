@@ -4,11 +4,16 @@ def loadFile(fileName):
     """
     Loads all lines from the fileName in cwd
     Returns a LineLinkedList object
+
+    If file fileName is empty, 
+    returns a LineLinkedList object with just one newline node
     """
     with open(fileName, 'r') as f:
         fileLines = f.readlines()
-    # making the linked list
-    return(LineLinkedList(fileLines))
+    if fileLines:
+        # making the linked list
+        return LineLinkedList(fileLines)
+    return LineLinkedList(['\n'])
 
 def saveFile(editorObj):
     """

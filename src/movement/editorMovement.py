@@ -10,12 +10,6 @@ def moveDown(editorObj):
     currentLineHeight = editorUtil.lineHeight(editorObj.editorscr, editorObj.currentLine)
     if y + currentLineHeight < editorObj.editorscr.getmaxyx()[0]-2:
         editorObj.currentLine = editorObj.currentLine.nextNode
-        if editorObj.currentLineIndex > len(editorObj.currentLine.value) - 2:
-            editorObj.currentLineIndex = len(editorObj.currentLine.value) - 2
-            editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
-            editorObj.drawLineNumbers()
-        if editorObj.currentLineIndex < 0:
-            editorObj.currentLineIndex = 0
 
     elif editorObj.currentLine.nextNode is not None:
         editorObj.currentLine = editorObj.currentLine.nextNode
@@ -24,6 +18,16 @@ def moveDown(editorObj):
             amountToMoveDown -= editorUtil.lineHeight(editorObj.editorscr, editorObj.topLine)
             editorObj.topLine = editorObj.topLine.nextNode
             editorObj.topLineCount += 1
+
+    if editorObj.currentLineIndex > len(editorObj.currentLine.value) - 2:
+        editorObj.currentLineIndex = len(editorObj.currentLine.value) - 2
+    if editorObj.currentLineIndex < 0:
+        editorObj.currentLineIndex = 0
+
+
+    # redraw everything
+    editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
+    editorObj.drawLineNumbers()
 
 def moveUp(editorObj):
     #if editorObj.editorscr.getyx()[0] > 0:

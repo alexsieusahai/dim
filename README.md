@@ -1,10 +1,8 @@
 # dim
 
 ## How to run
-Currently not totally implemented, so here's how to do it for now:
 Navigate to `.../dim/src`
 `python3 main.py`
-This will open `test.py` in the interface for you
 
 ## Usage!
 
@@ -48,6 +46,10 @@ Super similar to `vim` bindings, so if you use `vim` bindings a lot you'll be (m
 * `/` to search for a substring in the current text and store it in a buffer
     * `n` to cycle through the search buffer
 
+### Other features accessed from Normal mode
+* `u` while in Normal mode to undo
+* `ctrl+r` while in Normal mode to redo
+
 ### Insert Mode
 Type as normally! To exit insert mode and go back to `NORMAL` mode, press `ESC`.
 
@@ -56,6 +58,7 @@ Entering command line mode will bring you to the line at the bottom of the edito
 Available commands are:
 * `q` to quit the editor
 * `w` to save the currently edited file
+    * `w fileName` to save a file with name fileName within the current directory
 * `wq` to save and exit
 * `!` with some other commands to run them in terminal
     * `!ls` will perform the `ls` command and output to `dim`

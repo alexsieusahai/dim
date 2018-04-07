@@ -1,6 +1,12 @@
 import pygments
 from pygments.lexers import Python3Lexer
+
 from constants import SyntaxColors, Colors
+import Util.editorUtil as editorUtil
+
+# testing
+from Util.cursesUtil import kill
+
 
 def setColors(editorObj, colorMap):
     """
@@ -13,17 +19,31 @@ def setColors(editorObj, colorMap):
 
     colorMap is a dictionary which maps the kind of syntax
     to a certain color.
+
+    Use this with editorscr only!
+
+    Notice that this won't work perfectly; there will be times that
+    the syntax highlighting won't be perfect. This is a decided tradeoff;
+    the popular text editors don't seem to have a solution.
     """
     pylex = Python3Lexer()
     # lets build the string to parse
+
     syntax = ''
     walk = editorObj.lineLinkedList.start
-    while walk != None:
+    y = 0
+    increaseY = False
+    while walk is not None:
+        if walk == editorObj.currentLine:
+            increaseY = True
         syntax += walk.value
+        if increaseY:
+            y += editorUtil.lineHeight(editorObj.editorscr, walk)
+        if y > editorObj.editorscr.getmaxyx()[0]:
+            break
         walk = walk.nextNode
 
     walk = editorObj.lineLinkedList.start
-
     i = 0 # index of where i am walking through the string
 
     for token in pylex.get_tokens(syntax):
@@ -31,44 +51,55 @@ def setColors(editorObj, colorMap):
         if token[1] == '\n':
             walk = walk.nextNode
             i = -1
-            if walk == None:
+            if walk is None:
                 break
 
-        #tokenType = SyntaxColors.TEXT.value # assume everything is text and find contradiction
         tokenType = colorMap['TEXT'] # assume everything is text and find contradiction
 
-        if pygments.token.Comment.Single == token[0]:
-            #tokenType = SyntaxColors.COMMENT.value
+        if pygments.token.Comment.Single is token[0]:
             tokenType = colorMap['COMMENT']
 
-        if pygments.token.Keyword.Namespace == token[0]:
-            #tokenType = SyntaxColors.NAMESPACE.value
+        if pygments.token.Keyword.Namespace is token[0]:
             tokenType = colorMap['NAMESPACE']
 
-        if pygments.token.Keyword == token[0]:
-            #tokenType = SyntaxColors.KEYWORD.value
+        if pygments.token.Keyword is token[0]:
             tokenType = colorMap['KEYWORD']
 
-        if pygments.token.Name.Builtin == token[0]:
-            #tokenType = SyntaxColors.BUILTIN.value
+        if pygments.token.Name.Builtin is token[0]:
             tokenType = colorMap['BUILTIN']
 
-        if pygments.token.Name.Function == token[0]:
-            #tokenType = SyntaxColors.FUNCTION.value
+        if pygments.token.Name.Function is token[0]:
             tokenType = colorMap['FUNCTION']
 
-        if pygments.token.Literal.Number.Integer == token[0] or pygments.token.Literal.Number.Float == token[0]:
-            #tokenType = SyntaxColors.LITERAL.value
+        if pygments.token.Literal.Number.Integer is token[0] or pygments.token.Literal.Number.Float is token[0]:
             tokenType = colorMap['LITERAL']
 
-        if pygments.token.Operator == token[0]:
-            #tokenType = SyntaxColors.OPERATOR.value
+        if pygments.token.Operator is token[0]:
             tokenType = colorMap['OPERATOR']
 
-        if pygments.token.Literal.String.Single == token[0] or pygments.token.Literal.String.Double == token[0]:
-            #tokenType = SyntaxColors.STRING_LITERAL.value
+        if (pygments.token.Literal.String.Single is token[0] or
+                    pygments.token.Literal.String.Double is token[0]):
             tokenType = colorMap['STRING_LITERAL']
 
+        if pygments.token.Literal.String.Doc is token[0]:
+                tokenType = colorMap['STRING_LITERAL']
+
+        if token[0] is pygments.token.Literal.String.Doc:
+            for tok in token[1].split('\n'):
+                for c in tok:
+                    walk.colors[i] = tokenType
+                    i += 1
+                i = 0
+                walk = walk.nextNode
+
+            # if we were at the end break
+            if walk is None:
+                break
+
+            # set everything back to the way it was before
+            walk = walk.lastNode
+            i = -1
+            continue
 
         for c in token[1]:
             walk.colors[i] = tokenType

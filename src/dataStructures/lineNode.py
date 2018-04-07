@@ -1,6 +1,6 @@
 class LineNode:
 
-    def __init__(self,line,lastNode):
+    def __init__(self, line, lastNode):
         """
         `line` is a string which will be the value of this node
         `lastNode` is the pointer of the node before it

@@ -2,10 +2,14 @@ import string  # ascii, digits lists
 import os  # for file subsystem (os.chdir, os.getcwd, etc)
 import sys  # for sys.exit
 import subprocess  # for BANG!
+import select # polling
+import threading # lets highlight and build the spellchecker
+# as asynchronously as gil (global interpreter lock) will let me
 
 import curses  # drawing the editor
 
 from dataStructures.lineLinkedList import LineLinkedList
+from dataStructures.undoRedoStack import UndoRedoStack
 from Util.initCurses import initColors, initScreens
 from constants import State, WindowConstants
 import Util.fileUtil as fileUtil
@@ -23,7 +27,7 @@ class MainScr:
 
     def __init__(self):
         """
-        Inits screens, curses stuff, colors, etc
+        Inits screens, curses stuff, colors, attributes, etc
         """
         # set up curses stuff
         initScreens(self, WindowConstants)
@@ -53,11 +57,12 @@ class MainScr:
         self.setState(State.NORMAL)
         self.runFileNavigation(breakEarly=True)
         self.matchBuffer = []
-        self.drawAndRefreshFileNavigation()
 
         # grabbing the lines from the file
-        self.fileName = 'test.py'
-        self.lineLinkedList = fileUtil.loadFile(self.fileName)
+        #self.fileName = 'main.py'
+        #self.lineLinkedList = fileUtil.loadFile(self.fileName)
+        self.fileName = ''
+        self.lineLinkedList = LineLinkedList(['\n'])
 
         # make and store the savefile here
 
@@ -77,8 +82,13 @@ class MainScr:
         self.topLineCount = 1  # number to draw for topLine
         self.currentLineIndex = 0
 
-        self.drawLines(self.editorscr, self.topLine)
+        # set up undo redo stack
+        self.undoRedoStack = UndoRedoStack()
+
+        # draw everything for first iteration
+        syntaxHighlighting.setColors(self, self.colorMap)
         self.drawLineNumbers()
+        self.drawLines(self.editorscr, self.topLine)
         self.setState(State.NORMAL)
         self.commandRepeats = ''
 
@@ -124,10 +134,14 @@ class MainScr:
         else:
             return 'UNKNOWN_STATE'
 
-    def getState(self):
-        return self.state
+    def moveToNode(self, line, lineIndex):
+        self.currentLine = self.topLine = self.lineLinkedList.start
+        while self.currentLine != line:
+            editorMovement.moveDown(self)
+        self.currentLineIndex = lineIndex
+        pass
 
-    def moveTo(self, lineNumber, lineIndex):
+    def moveToIndex(self, lineNumber, lineIndex):
         self.currentLine = self.topLine = self.lineLinkedList.start
         for i in range(lineNumber-1):
             editorMovement.moveDown(self)
@@ -143,6 +157,7 @@ class MainScr:
         # draw line numbers
         lineToDraw = self.topLine
         if self.topLine is None:
+            print('found self.topLine as None')
             assert(False)
         y = 0
         lineIndex = self.topLineCount
@@ -243,10 +258,11 @@ class MainScr:
         self.statusscr.addstr(checkStr)
         self.statusscr.refresh()
 
-    def outputTerminalChatter(self, process):
+    def outputTerminalChatter(self, cmd):
         """
         Output whatever process sends to stdout in real time
         """
+        process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 
         # clean the screen to prepare for output
         self.editorscr.clear()
@@ -258,12 +274,9 @@ class MainScr:
         outputStr = ''
 
         while True:
-
             out = process.stdout.read(1).decode()
             if out == '' and process.poll() is not None:
                 break
-            if out == '':
-                outputStr = process.poll()
             if out != '':
                 outputStr += out
                 consoleChatterLines = LineLinkedList(outputStr.split('\n'))
@@ -276,6 +289,7 @@ class MainScr:
                 self.drawLines(self.editorscr, self.topLine)
                 self.drawLineNumbers()
                 self.editorscr.refresh()
+
 
         # kill the pipe
         process.stdout.close()
@@ -386,13 +400,10 @@ class MainScr:
         """
         while True:
 
-            syntaxHighlighting.setColors(self, self.colorMap)
-
-            self.drawStatus()  # draw the status bar text on status bar
-            self.drawLines(self.editorscr, self.topLine)
-            self.drawLineNumbers()
+            # set everything up for the run
             (y, x) = self.editorscr.getyx()  # get cursor position relative to top left
             repeats = 1 if self.commandRepeats == '' else int(self.commandRepeats)
+
             if self.state == State.NORMAL:
                 c = chr(self.editorscr.getch())  # get a key
 
@@ -581,7 +592,10 @@ class MainScr:
                             self.drawLineNumbers()
 
                 elif c == 'g':  # go to beginning of file
-                    self.currentLine = self.topLine = self.lineLinkedList.start
+                    self.currentLine = self.lineLinkedList.start
+                    self.topLine = self.lineLinkedList.start
+                    self.topLineCount = 1
+                    y = self.editorscr.getyx()[0]
                     for i in range(repeats-1):
                         editorMovement.moveDown(self)
 
@@ -603,7 +617,7 @@ class MainScr:
                     # go to first match
                     if self.matchBuffer:
                         (lineNumber, lineIndex) = self.matchBuffer[0]
-                        self.moveTo(lineNumber, lineIndex)
+                        self.moveToIndex(lineNumber, lineIndex)
                         temp = self.matchBuffer[0]
                         del self.matchBuffer[0]
                         self.matchBuffer.append(temp)
@@ -632,14 +646,24 @@ class MainScr:
                         self.deleteMode = True
                     continue
 
+                elif c == 'u':  # undo
+                    self.undoRedoStack.undo(self)
+
+                elif c == chr(18):  # ctrl + r
+                    self.undoRedoStack.redo(self)
+
                 elif c in [str(x) for x in range(10)]:
                     self.commandRepeats += str(c)
                     continue
 
                 elif c == 'i':
+                    self.undoRedoStack.pushOntoUndo(self)
+                    # put currentLine and its value onto undo stack
                     self.setState(State.INSERT)
 
                 elif c == 'a':
+                    self.undoRedoStack.pushOntoUndo(self)
+                    # put currentLine and its value onto undo stack
                     if editorUtil.getNextChar(self) == '\n':
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
@@ -651,6 +675,7 @@ class MainScr:
 
                 elif c == 'A':
                     editorUtil.moveToEndOfLine(self)
+                    self.undoRedoStack.pushOntoUndo(self)
                     if editorUtil.getNextChar(self) == '\n':
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
@@ -681,6 +706,12 @@ class MainScr:
                 self.deleteMode = False
                 self.commandRepeats = ''
 
+                # draw everything again
+                syntaxHighlighting.setColors(self, self.colorMap)
+                self.drawStatus()  # draw the status bar text on status bar
+                self.drawLines(self.editorscr, self.topLine)
+                self.drawLineNumbers()
+
 
             if self.state == State.INSERT or self.state == State.APPEND:
 
@@ -701,6 +732,9 @@ class MainScr:
                         # delete the line
                         self.currentLine = editorUtil.deleteLine(self, self.currentLine)
 
+                    self.drawLines(self.editorscr, self.topLine)
+                    self.drawLineNumbers()
+
                 elif ord(c) == 10:   # enter
                     if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0] -2:
                         self.topLine = self.topLine.nextNode
@@ -718,6 +752,7 @@ class MainScr:
                             i += 1
                         else:
                             break
+
                     self.drawLines(self.editorscr, self.topLine)
                     self.drawLineNumbers()
 
@@ -734,7 +769,6 @@ class MainScr:
                 raise NotImplementedError
 
             elif self.state == State.COMMAND_LINE:
-                # what about if user presses escape?
                 cmd = editorUtil.getCmd(self)
 
                 if cmd == chr(27):  # escape character
@@ -743,10 +777,23 @@ class MainScr:
                 cmd = cmd.strip(' \t\n\r')
                 # tokenize based on '|'
                 cmds = cmd.split('|')
-                for cmd in cmds:
+                for i in cmds:
                     for cmdChar in cmd:
                         if cmdChar == 'w':
-                            fileUtil.saveFile(self)
+                            args = cmd.split()
+                            # what if the fileName is ''?
+                            if self.fileName is '':
+                                if len(args) - 1 > 0:
+                                    self.fileName = args[1]
+                                    fileUtil.saveFile(self)
+                                    self.drawAndRefreshFileNavigation() 
+                                    # disp new file if one is made
+                                else:
+                                    self.statusscr.clear()
+                                    self.statusscr.addstr('Error; No file name')
+                                    self.statusscr.refresh()
+                            else:
+                                fileUtil.saveFile(self)
                         if cmdChar == 'q':
                             cursesUtil.kill(self)
                             sys.exit(0)
@@ -764,9 +811,7 @@ class MainScr:
                             if cmd[0] == '!':
                                 cmd = cmd[1:]
 
-                            process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
-
-                            self.outputTerminalChatter(process)
+                            self.outputTerminalChatter(cmd)
 
                             # bring what we killed back to life
                             cursesUtil.birth()
