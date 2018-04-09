@@ -1,7 +1,8 @@
 # dim
 
+![Screenshot of dim](https://imgur.com/a/mcyt2)
 ## How to run
-Navigate to `.../dim/src`
+Navigate to `.../dim/src`  
 `python3 main.py`
 
 ## Usage!

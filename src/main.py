@@ -321,12 +321,10 @@ class MainScr:
             directory = directory.nextNode
 
     def drawAndRefreshFileNavigation(self):
-
         self.filenavscr.clear()
         self.drawLines(self.filenavscr, self.topDir)
 
     def runFileNavigation(self, breakEarly=False):
-
         self.dirs = LineLinkedList(editorUtil.getDirs())
         self.topDir = self.currentDir = self.dirs.start
         self.setUpFileHighlighting()
