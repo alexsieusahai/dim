@@ -34,6 +34,28 @@ def save_compressed(filename):
 		with open(filename+'.huf', 'wb') as compressed:
 		    util.compress(tree, tocompress, compressed)
 
+def open_decompressed(filename):
+
+	with open(path+'.huf', 'rb') as compressed:
+		with open(path, 'w') as decompressed:
+        	util.decompress(compressed, decompressed)
+
+    """
+    TODO read from filename, get the first number, then get the rest
+
+    untransform it using BW
+
+    then write it back to a file
+    """
+
+	with open(filename, 'r') as f:
+        fileLines = f.readlines()
+    if fileLines:
+        # making the linked list
+        return LineLinkedList(fileLines)
+    return LineLinkedList(['\n'])
+
+
 
 if __name__ == "__main__":
 	with open('temp', 'r') as untransformed:
