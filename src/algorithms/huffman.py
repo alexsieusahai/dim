@@ -27,7 +27,7 @@ def make_tree(freq_table):
     Constructs and returns the Huffman tree from the given frequency table.
     """
 
-    trees = BinaryHeap()
+    trees = PairingHeap()
     trees.insert(TreeLeaf(None), 1)
     for (symbol, freq) in freq_table.items():
         trees.insert(TreeLeaf(symbol), freq)
