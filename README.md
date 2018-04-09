@@ -1,5 +1,5 @@
 # dim
-[Imgur](https://i.imgur.com/4PFgSr6.png)
+![Imgur](https://i.imgur.com/4PFgSr6.png)
 ## How to run
 Navigate to `.../dim/src`  
 `python3 main.py`
