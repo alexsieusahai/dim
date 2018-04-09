@@ -2,8 +2,7 @@
 MILESTONES:
 *****************
 
-SUNDAY TODO:
-    - Implement rope
+TODO:
 	- Get `dimtutor` set up and going
     - Implement deletion `b`
     - Implement command saving (push it into a doubly linked list and let the user 
@@ -12,44 +11,20 @@ SUNDAY TODO:
     - Implement macros (use concept similar to undoRedoStack)
 	- Implement emergency file saving
 	- Compress that file upon exiting using Huffman Compression
-
-TUESDAY TODO:
 	- Implement minimap (look at how the one in vim is implemented)
-	
-WEDNESDAY TODO:
 	- Work on piping for console output (so you can see what you're typing)
 		- Set the output to a linked list and use drawlines() to draw it, and traverse it using moveUp, moveDown, etc
 		- Exit the output with a defined key, maybe `ESC` or something
 		- Run it similar to runFileNavigation
-	- ONE WEEK LEFT UNTIL PROJECT IS DUE!
-	
-THURSDAY TODO:
 	- Finish piping
-
-FRIDAY TODO:
 	- Implement real time automatic testing, use threading and a seperate pipe than stdin to pipe data into output prog so that the user doesn't have the stdin pipe (which curses is using) blocked while it's being tested
-		
-SATURDAY TODO:
 	- Day/Night color mode, `redify` mode for increased red light exposure at night (like f.lux)
-	
-SUNDAY TODO:
-	- Implement as much of `VISUAL` mode as you can
-    - Hackday at se
-	
-MONDAY TODO:
-	- Write up README.md and manual
-	- Hacktime! presentation (for some practice presenting)
-	
-TUESDAY TODO:
-	- Presentation day!
-	
+	- Implement as much of `VISUAL` mode as you can	
 
 IMPORTANT:
-    - Make tests for all data structures and algorithms that run if that python script is running in main namespace 
-
-Implement `VISUAL` mode
-Implement copy paste containers tied to each key (not in vim but would be super awesome)
-
+    - Make tests for all data structures and algorithms that run if that python script is running in main namespace
+    - Learn and execute best practices for unit tests
+    
 *********************
 ONCE IT'S FINISHED
 *********************
@@ -58,9 +33,6 @@ Prettify the `README.md` page, with gifs and screenshots and a link to a manual
 ****************************
 WISHLIST
 ****************************
-
-Spellcheck
-    - Factor oracle, suffix trie (two modes?)
 
 Inertial Scrolling
     - have to make a lot of stuff faster before doing this
