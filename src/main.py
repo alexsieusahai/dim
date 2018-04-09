@@ -2,14 +2,16 @@ import string  # ascii, digits lists
 import os  # for file subsystem (os.chdir, os.getcwd, etc)
 import sys  # for sys.exit
 import subprocess  # for BANG!
-import select # polling
-import threading # lets highlight and build the spellchecker
+import select  # polling
+import threading  # lets highlight and build the spellchecker
+import pipes  # to print out input
 # as asynchronously as gil (global interpreter lock) will let me
 
 import curses  # drawing the editor
 
 from dataStructures.lineLinkedList import LineLinkedList
 from dataStructures.undoRedoStack import UndoRedoStack
+from dataStructures.bkTree import bk_tree
 from Util.initCurses import initColors, initScreens
 from constants import State, WindowConstants
 import Util.fileUtil as fileUtil
@@ -96,6 +98,14 @@ class MainScr:
         self.punctuationChars = {}
         for c in string.punctuation:
             self.punctuationChars[c] = True
+
+        # set up bk tree for spellcheck
+        self.spellCheckLine = 1000
+        spellCheckStream = open('dataStructures/words.txt')
+        self.spellCheckWords = []
+        for line in spellCheckStream:
+            self.spellCheckWords.append(line[:-1])  # take off newline character
+        self.spellCheck = bk_tree()
 
     def __exit__(self, exc_type, exc_value, traceback):
         """
@@ -262,7 +272,8 @@ class MainScr:
         """
         Output whatever process sends to stdout in real time
         """
-        process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
+        inpipe = open('test.in', 'r+')
+        process = subprocess.Popen(cmd.split(), stdin = inpipe, stdout=subprocess.PIPE)
 
         # clean the screen to prepare for output
         self.editorscr.clear()
@@ -396,6 +407,10 @@ class MainScr:
         """
         Main loop of the state machine
         """
+        if self.spellCheckLine < 9998:
+            self.spellCheckLine += 1
+            self.spellCheck.add(self.spellCheckWords[self.spellCheckLine])
+
         while True:
 
             # set everything up for the run
@@ -784,7 +799,7 @@ class MainScr:
                                 if len(args) - 1 > 0:
                                     self.fileName = args[1]
                                     fileUtil.saveFile(self)
-                                    self.drawAndRefreshFileNavigation() 
+                                    self.drawAndRefreshFileNavigation()
                                     # disp new file if one is made
                                 else:
                                     self.statusscr.clear()
