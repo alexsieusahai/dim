@@ -1,4 +1,5 @@
 # dim
+`dim` editing its own source code below
 ![Imgur](https://i.imgur.com/4PFgSr6.png)
 ## How to run
 Navigate to `.../dim/src`  
