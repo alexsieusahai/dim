@@ -3,7 +3,6 @@ MILESTONES:
 *****************
 
 TODO:
-    - Implement rope
 	- Get `dimtutor` set up and going
     - Implement deletion `b`
     - Implement command saving (push it into a doubly linked list and let the user 
