@@ -55,9 +55,11 @@ def setColors(editorObj, colorMap):
 
         if token[1] == '\n':
             walk = walk.nextNode
-            i = -1
+            #i = -1
+            i = 0
             if walk is None:
                 break
+            continue
 
         tokenType = colorMap['TEXT'] # assume everything is text and find contradiction
 
@@ -107,5 +109,11 @@ def setColors(editorObj, colorMap):
             continue
 
         for c in token[1]:
-            walk.colors[i] = tokenType
-            i += 1
+            try:
+                walk.colors[i] = tokenType
+                i += 1
+            except:
+                kill(editorObj)
+                print(walk.value, end='\r\n')
+                print(token[1])
+                assert(False)

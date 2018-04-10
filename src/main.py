@@ -272,8 +272,7 @@ class MainScr:
         """
         Output whatever process sends to stdout in real time
         """
-        inpipe = open('test.in', 'r+')
-        process = subprocess.Popen(cmd.split(), stdin = inpipe, stdout=subprocess.PIPE)
+        process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
 
         # clean the screen to prepare for output
         self.editorscr.clear()
@@ -523,19 +522,16 @@ class MainScr:
                         else:
                             editorMovement.moveRight(self)
 
-                        while True:
-                            while (editorUtil.getNextChar(self) == ' ' or
-                                    editorUtil.getNextChar(self) in string.ascii_letters):
-                                if self.deleteMode is True:
-                                    editorUtil.deleteCharacter(self, self.currentLine, x)
-                                else:
-                                    editorMovement.moveRight(self)
-                            self.drawLines(self.editorscr, self.topLine)
-                            self.drawLineNumbers()
-                            break
-
-                        if self.deleteMode is True:
-                            editorUtil.deleteCharacter(self, self.currentLine, x)
+                        while editorUtil.getNextChar(self) == ' ':
+                            if self.deleteMode is True:
+                                editorUtil.deleteCharacter(self, self.currentLine, x)
+                            else:
+                                editorMovement.moveRight(self)
+                        while editorUtil.getNextChar(self) in string.ascii_letters:
+                            if self.deleteMode is True:
+                                editorUtil.deleteCharacter(self, self.currentLine, x)
+                            else:
+                                editorMovement.moveRight(self)
 
                 elif c == 'b':
                     """
@@ -639,7 +635,7 @@ class MainScr:
                     # jump to the next thing in the match buffer
                     if self.matchBuffer != []:
                         (lineNumber, lineIndex) = self.matchBuffer[0]
-                        self.moveTo(lineNumber, lineIndex)
+                        self.moveToIndex(lineNumber, lineIndex)
                         temp = self.matchBuffer[0]
                         del self.matchBuffer[0]
                         self.matchBuffer.append(temp)
@@ -677,6 +673,9 @@ class MainScr:
                 elif c == 'a':
                     self.undoRedoStack.pushOntoUndo(self)
                     # put currentLine and its value onto undo stack
+                    if editorUtil.getCurrentChar(self) == '\n':
+                        self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
+                        self.currentLine.colors.append(0)
                     if editorUtil.getNextChar(self) == '\n':
                         self.currentLine.value = self.currentLine.value[:self.currentLineIndex+1] + ' \n'
                         self.currentLine.colors.append(0)
@@ -719,11 +718,6 @@ class MainScr:
                 self.deleteMode = False
                 self.commandRepeats = ''
 
-                # draw everything again
-                syntaxHighlighting.setColors(self, self.colorMap)
-                self.drawStatus()  # draw the status bar text on status bar
-                self.drawLines(self.editorscr, self.topLine)
-                self.drawLineNumbers()
 
 
             if self.state == State.INSERT or self.state == State.APPEND:
@@ -823,7 +817,7 @@ class MainScr:
                                 cmd = cmd[1:]
                             if cmd[0] == '!':
                                 cmd = cmd[1:]
-
+                            cursesUtil.kill(self)
                             self.outputTerminalChatter(cmd)
 
                             # bring what we killed back to life
@@ -884,6 +878,13 @@ class MainScr:
                 self.lineLinkedList = tempLinkedList
                 self.currentLine = tempCurrentLine
                 self.topLine = tempTopLine
+
+            # draw everything again
+            syntaxHighlighting.setColors(self, self.colorMap)
+            self.drawStatus()  # draw the status bar text on status bar
+            self.drawLines(self.editorscr, self.topLine)
+            self.drawLineNumbers()
+
 
 if __name__ == "__main__":
     editor = MainScr()
