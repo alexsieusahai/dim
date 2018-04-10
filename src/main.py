@@ -643,6 +643,7 @@ class MainScr:
                 # move to different states
                 elif c == 'd':
                     if self.deleteMode is True:  # equivalent to dd command
+                        self.undoRedoStack.pushOntoUndo(self)
                         if self.currentLine.nextNode is None: # last node
                             temp = self.currentLine.lastNode
                             editorUtil.deleteLine(self, self.currentLine, trueDelete=True)
