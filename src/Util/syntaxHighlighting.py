@@ -94,7 +94,10 @@ def setColors(editorObj, colorMap):
         if token[0] is pygments.token.Literal.String.Doc:
             for tok in token[1].split('\n'):
                 for c in tok:
-                    walk.colors[i] = tokenType
+                    try:
+                        walk.colors[i] = tokenType
+                    except:
+                        a = 1 # do nothing
                     i += 1
                 i = 0
                 walk = walk.nextNode
@@ -113,7 +116,4 @@ def setColors(editorObj, colorMap):
                 walk.colors[i] = tokenType
                 i += 1
             except:
-                kill(editorObj)
-                print(walk.value, end='\r\n')
-                print(token[1])
-                assert(False)
+                a = 1 # do nothing
