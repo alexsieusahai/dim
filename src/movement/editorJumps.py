@@ -169,12 +169,13 @@ def jump_to_line(editorObj, repeats):
     Jump to the beginning of the line, and then from the beginning
     walk down to the line number equivalent to repeats.
     """
-    editorObj.currentLine = editorObj.lineLinkedList.start
     editorObj.topLine = editorObj.lineLinkedList.start
     editorObj.topLineCount = 1
-    y = editorObj.editorscr.getyx()[0]
+    y = 0
+    editorObj.currentLineIndex = 0
+
     for i in range(repeats-1):
-        editorMovement.moveDown(editorObj)
-        # bandage solution for now
-        editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
-        editorObj.drawLineNumbers()
+        editorObj.topLine = editorObj.topLine.nextNode
+        editorObj.topLineCount += 1
+
+    editorObj.currentLine = editorObj.topLine
