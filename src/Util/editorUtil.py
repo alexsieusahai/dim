@@ -2,6 +2,9 @@ import os  # to get the dirs
 
 from dataStructures.lineNode import LineNode
 
+import algorithms.kmp as kmp
+
+
 def lineHeight(scr, lineNode):
     """
     Returns the "height" (how many rows it takes up) of lineNode object passed in
@@ -132,4 +135,18 @@ def getDirs():
         i += 1
     return dirs
 
+def find_pattern_in_syntax(editorObj, pattern_to_find):
+    if pattern_to_find[0] == '/':
+        pattern_to_find = pattern_to_find[1:]
+    walk = editorObj.lineLinkedList.start
+    matchBuffer = []
+    lineNumber = 1
+    while walk is not None:
+        matches = kmp.kmp(walk.value, pattern_to_find)
+        if matches:
+            for match in matches:
+                matchBuffer.append((lineNumber, match))
+        walk = walk.nextNode
+        lineNumber += 1
+    return matchBuffer
 

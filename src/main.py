@@ -65,12 +65,8 @@ class MainScr:
         self.matchBuffer = []
 
         # grabbing the lines from the file
-        #self.fileName = 'main.py'
-        #self.lineLinkedList = fileUtil.loadFile(self.fileName)
         self.fileName = ''
         self.lineLinkedList = LineLinkedList(['\n'])
-
-        # make and store the savefile here
 
         (maxY, maxX) = self.stdscr.getmaxyx()
 
@@ -148,21 +144,15 @@ class MainScr:
         else:
             return 'UNKNOWN_STATE'
 
-    def moveToNode(self, line, lineIndex):
-        self.currentLine = self.topLine = self.lineLinkedList.start
-        while self.currentLine != line:
-            editorMovement.moveDown(self)
-        self.currentLineIndex = lineIndex
-        pass
-
-    def moveToIndex(self, lineNumber, lineIndex):
+    def move_to_node_and_index(self, lineNumber, lineIndex):
         self.currentLine = self.topLine = self.lineLinkedList.start
         for i in range(lineNumber-1):
             editorMovement.moveDown(self)
+            self.drawLines(self.editorscr, self.topLine)
+            self.drawLineNumbers()
         self.currentLineIndex = lineIndex
 
     def drawLineNumbers(self):
-
         # clear old data off the screen
         self.linenumscr.clear()
 
@@ -170,9 +160,6 @@ class MainScr:
 
         # draw line numbers
         lineToDraw = self.topLine
-        if self.topLine is None:
-            print('found self.topLine as None')
-            assert(False)
         y = 0
         lineIndex = self.topLineCount
         self.linenumscr.move(0, 0)
@@ -181,11 +168,6 @@ class MainScr:
 
             if lineToDraw == self.currentLine:
                 moveY = y + self.currentLineIndex//self.editorscr.getmaxyx()[1]
-                # below solution doesn't work for tabs, but way faster
-                #moveX = min(
-                #        self.currentLineIndex % self.editorscr.getmaxyx()[1],
-                #        len(self.currentLine.value)-2
-                #        )  # avoid the newline char
                 for i in range(self.currentLineIndex):
                     c = self.currentLine.value[i]
                     if c == '\t':
@@ -264,9 +246,9 @@ class MainScr:
         """
         self.statusscr.clear()
         checkStr = (self.getStateStr() + '  ' + os.getcwd() +
-                    '/' + self.fileName + '  ' + 'Line ' +
-                    str(self.currentLineCount) +
-                    ' Column ' + str(self.currentLineIndex))
+                            '/' + self.fileName + '  ' + 'Line ' +
+                            str(self.currentLineCount) +
+                            ' Column ' + str(self.currentLineIndex))
         if len(checkStr) > self.statusscr.getmaxyx()[1]:
             checkStr = checkStr[:self.statusscr.getmaxyx()[1]-2]
         self.statusscr.addstr(checkStr)
@@ -424,7 +406,7 @@ class MainScr:
                 c = chr(self.editorscr.getch())  # get a key
 
                 # movement
-                # remember top left is (0,0)
+                # remember top left is (0, 0)
                 if c == 'j':  # down
                     editorMovement.moveDown(self)
                 elif c == 'k':  # up
@@ -454,33 +436,24 @@ class MainScr:
                     editorJumps.jump_to_line(self, repeats)
 
                 elif c == '/':  # search function
-                    patternToFind = editorUtil.getCmd(self, altDisplayChar='/')
-                    if patternToFind[0] == '/':
-                        patternToFind = patternToFind[1:]
-                    walk = self.lineLinkedList.start
-                    self.matchBuffer = []
-                    lineNumber = 1
-                    while walk is not None:
-                        matches = kmp.kmp(walk.value, patternToFind)
-                        if matches:
-                            for match in matches:
-                                self.matchBuffer.append((lineNumber, match))
-                        walk = walk.nextNode
-                        lineNumber += 1
+                    pattern_to_find = editorUtil.getCmd(self, altDisplayChar='/')
+                    self.matchBuffer = (editorUtil.find_pattern_in_syntax(
+                                                            self, pattern_to_find))
                     self.currentLine = self.topLine = self.lineLinkedList.start
                     # go to first match
                     if self.matchBuffer:
                         (lineNumber, lineIndex) = self.matchBuffer[0]
-                        self.moveToIndex(lineNumber, lineIndex)
+                        self.move_to_node_and_index(lineNumber, lineIndex)
                         temp = self.matchBuffer[0]
                         del self.matchBuffer[0]
                         self.matchBuffer.append(temp)
+
 
                 elif c == 'n':
                     # jump to the next thing in the match buffer
                     if self.matchBuffer != []:
                         (lineNumber, lineIndex) = self.matchBuffer[0]
-                        self.moveToIndex(lineNumber, lineIndex)
+                        self.move_to_node_and_index(lineNumber, lineIndex)
                         temp = self.matchBuffer[0]
                         del self.matchBuffer[0]
                         self.matchBuffer.append(temp)
@@ -499,7 +472,7 @@ class MainScr:
                         self.deleteMode = False
                     else:
                         self.deleteMode = True
-                    continue
+                        continue
 
                 elif c == 'u':  # undo
                     self.undoRedoStack.undo(self)
@@ -579,9 +552,6 @@ class MainScr:
                     if self.currentLineIndex == -1:
                         # delete the line
                         self.currentLine = editorUtil.deleteLine(self, self.currentLine)
-
-                    #self.drawLines(self.editorscr, self.topLine)
-                    #self.drawLineNumbers()
 
                 elif ord(c) == 10:   # enter
                     if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0] -2:
