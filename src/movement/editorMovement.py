@@ -24,12 +24,10 @@ def moveDown(editorObj):
     if editorObj.currentLineIndex < 0:
         editorObj.currentLineIndex = 0
 
-
-    # redraw everything
-    editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
-    editorObj.drawLineNumbers()
-
 def moveUp(editorObj):
+    """
+    Moves currentLine up one line and places the currentLineIndex appropriately.
+    """
     #if editorObj.editorscr.getyx()[0] > 0:
     if editorObj.currentLine is not editorObj.topLine:
         editorObj.currentLine = editorObj.currentLine.lastNode
@@ -44,6 +42,10 @@ def moveUp(editorObj):
         editorObj.drawLineNumbers()
 
 def moveLeft(editorObj):
+    """
+    Moves currentLineIndex such that the cursor points
+    one unit left of what it was before, if able
+    """
     if editorObj.editorscr.getyx()[1] > 0:
         if editorObj.currentLineIndex > len(editorObj.currentLine.value)-2:
             editorObj.currentLineIndex = len(editorObj.currentLine.value)-2
@@ -54,6 +56,10 @@ def moveLeft(editorObj):
             editorObj.currentLineIndex -= 1
 
 def moveRight(editorObj):
+    """
+    Moves currentLineIndex such that the cursor points
+    one unit right of what it was before, if able
+    """
     if editorObj.currentLine.value != '\n':  # if it's only newline ignore
         if editorObj.currentLineIndex > len(editorObj.currentLine.value) - 2:
             editorObj.currentLineIndex = len(editorObj.currentLine.value) - 2

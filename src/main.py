@@ -597,8 +597,6 @@ class MainScr:
 
                         if moveForward:
                             editorMovement.moveRight(self)
-                            self.drawLines(self.editorscr, self.topLine)
-                            self.drawLineNumbers()
 
                 elif c == 'g':  # go to beginning of file
                     self.currentLine = self.lineLinkedList.start
@@ -682,8 +680,6 @@ class MainScr:
                         self.currentLine.colors.append(0)
                         # insert a space
                     editorMovement.moveRight(self)
-                    self.drawLines(self.editorscr, self.topLine)
-                    self.drawLineNumbers()
                     self.setState(State.APPEND)
 
                 elif c == 'A':
@@ -694,15 +690,11 @@ class MainScr:
                         self.currentLine.colors.append(0)
                         # insert a space
                     editorMovement.moveRight(self)
-                    self.drawLines(self.editorscr, self.topLine)
-                    self.drawLineNumbers()
                     self.setState(State.APPEND)
 
                 elif c == 'x':
                     # delete character
                     editorUtil.deleteCharacter(self, self.currentLine, self.currentLineIndex)
-                    self.drawLines(self.editorscr, self.topLine)
-                    self.drawLineNumbers()
 
                 elif c == 'v':
                     self.setState(State.VISUAL)
@@ -719,7 +711,8 @@ class MainScr:
                 self.deleteMode = False
                 self.commandRepeats = ''
 
-
+            self.drawLines(self.editorscr, self.topLine)
+            self.drawLineNumbers()
 
             if self.state == State.INSERT or self.state == State.APPEND:
 
