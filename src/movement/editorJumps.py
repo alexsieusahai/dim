@@ -4,14 +4,18 @@ import Util.editorUtil as editorUtil
 import Util.drawUtil as drawUtil
 import movement.editorMovement as editorMovement
 
-def jump_forward_one_word(editorObj, repeats):
-
+def jump_forward_one_word(editorObj, repeats, index):
+    """
+    Walk through elements on line until you hit
+    either punctuation (where you stop) or spaces
+    If editorObj.deleteMode is True then delete instead of move
+    """
     for i in range(repeats):
 
         # handle edge case of `w` on '\n' line
         if editorUtil.getCurrentChar(editorObj) == '\n':
             if editorObj.deleteMode is True:
-                editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
+                editorUtil.deleteCharacter(editorObj, editorObj.currentLine, index)
                 drawUtil.drawLineNumbers(editorObj)
             else:
                 editorMovement.moveDown(editorObj)
@@ -20,7 +24,7 @@ def jump_forward_one_word(editorObj, repeats):
 
         if editorUtil.getNextChar(editorObj) == '\n':
             if editorObj.deleteMode is True:
-                editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
+                editorUtil.deleteCharacter(editorObj, editorObj.currentLine, index)
             else:
                 editorMovement.moveDown(editorObj)
                 editorObj.currentLineIndex = 0
@@ -29,7 +33,7 @@ def jump_forward_one_word(editorObj, repeats):
         while True:
 
             if editorObj.deleteMode is True:
-                editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
+                editorUtil.deleteCharacter(editorObj, editorObj.currentLine, index)
             else:
                 editorMovement.moveRight(editorObj)
             drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
@@ -41,8 +45,8 @@ def jump_forward_one_word(editorObj, repeats):
 
             if editorUtil.getNextChar(editorObj) == '\n':
                 if editorObj.deleteMode is True:
-                    editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
-                    editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
+                    editorUtil.deleteCharacter(editorObj, editorObj.currentLine, index)
+                    editorUtil.deleteCharacter(editorObj, editorObj.currentLine, index)
                 else:
                     editorMovement.moveDown(editorObj)
                     editorObj.currentLineIndex = 0
@@ -53,7 +57,7 @@ def jump_forward_one_word(editorObj, repeats):
             if c == ' ':
                 while c == ' ':
                     if editorObj.deleteMode is True:
-                        editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
+                        editorUtil.deleteCharacter(editorObj, editorObj.currentLine, index)
                     else:
                         editorMovement.moveRight(editorObj)
                     drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
@@ -63,11 +67,12 @@ def jump_forward_one_word(editorObj, repeats):
                         break
                 break
 
-def jump_one_word_and_whitespace(editorObj, repeats):
+def jump_one_word_and_whitespace(editorObj, repeats, index):
     """
     Walk through elements on line until you hit
     either punctuation (where you stop) or spaces
     (where you walk through until you hit something that isn't a space)
+    If editorObj.deleteMode is True then delete instead of move
     """
     for i in range(repeats):
 
@@ -75,10 +80,10 @@ def jump_one_word_and_whitespace(editorObj, repeats):
         if editorObj.currentLine.value == '\n' or editorUtil.getNextChar(editorObj) == '\n':
             if editorObj.deleteMode is True:
                 if editorObj.currentLine.value == '\n':
-                    editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
+                    editorUtil.deleteCharacter(editorObj, editorObj.currentLine, index)
                 else:
-                    editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
-                    editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
+                    editorUtil.deleteCharacter(editorObj, editorObj.currentLine, index)
+                    editorUtil.deleteCharacter(editorObj, editorObj.currentLine, index)
                 continue
 
             editorMovement.moveDown(editorObj)
@@ -86,25 +91,26 @@ def jump_one_word_and_whitespace(editorObj, repeats):
             continue
 
         if editorObj.deleteMode is True:
-            editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
+            editorUtil.deleteCharacter(editorObj, editorObj.currentLine, index)
         else:
             editorMovement.moveRight(editorObj)
 
         while editorUtil.getNextChar(editorObj) == ' ':
             if editorObj.deleteMode is True:
-                editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
+                editorUtil.deleteCharacter(editorObj, editorObj.currentLine, index)
             else:
                 editorMovement.moveRight(editorObj)
         while editorUtil.getNextChar(editorObj) in string.ascii_letters:
             if editorObj.deleteMode is True:
-                editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
+                editorUtil.deleteCharacter(editorObj, editorObj.currentLine, index)
             else:
                 editorMovement.moveRight(editorObj)
 
-def jump_backward_one_word(editorObj, repeats):
+def jump_backward_one_word(editorObj, repeats, index):
     """
-    Walk through elements on the line _backwards_
+    Walk through elements on the line backwards
     until the character before is punctuation or a space
+    If editorObj.deleteMode is True then delete instead of move
     """
     for i in range(repeats):
 

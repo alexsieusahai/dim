@@ -259,13 +259,13 @@ class MainScr:
                     editorUtil.moveToBeginningOfLine(self)
 
                 elif c == 'w':
-                    editorJumps.jump_forward_one_word(self, repeats)
+                    editorJumps.jump_forward_one_word(self, repeats, x)
 
                 elif c == 'e':
-                    editorJumps.jump_one_word_and_whitespace(self, repeats)
+                    editorJumps.jump_one_word_and_whitespace(self, repeats, x)
 
                 elif c == 'b':
-                    editorJumps.jump_backward_one_word(self, repeats)
+                    editorJumps.jump_backward_one_word(self, repeats, x)
 
                 elif c == 'g':
                     editorJumps.jump_to_line(self, repeats)

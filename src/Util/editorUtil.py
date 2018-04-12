@@ -156,7 +156,7 @@ def move_to_node_and_index(editorObj, lineNumber, lineIndex):
     for i in range(lineNumber-1):
         movement.editorMovement.moveDown(editorObj)
         Util.drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
-        editorObj.drawLineNumbers()
+        Util.drawUtil.drawLineNumbers(editorObj)
     editorObj.currentLineIndex = lineIndex
 
 
