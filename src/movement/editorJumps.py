@@ -175,6 +175,8 @@ def jump_to_line(editorObj, repeats):
     editorObj.currentLineIndex = 0
 
     for i in range(repeats-1):
+        if editorObj.topLine.nextNode is None:
+            break
         editorObj.topLine = editorObj.topLine.nextNode
         editorObj.topLineCount += 1
 
