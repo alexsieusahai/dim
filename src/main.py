@@ -14,15 +14,19 @@ from dataStructures.undoRedoStack import UndoRedoStack
 from dataStructures.bkTree import bk_tree
 from Util.initCurses import initColors, initScreens
 from constants import State, WindowConstants
+
 import Util.fileUtil as fileUtil
 import Util.editorUtil as editorUtil
 import Util.cursesUtil as cursesUtil
 import Util.syntaxHighlighting as syntaxHighlighting
 import Util.changeColorsUtil as changeColorsUtil
+
 from algorithms.binSearch import dirBinSearch
 import algorithms.kmp as kmp
+
 import movement.fileNavMovement as fileNavMovement
 import movement.editorMovement as editorMovement
+import movement.editorJumps as editorJumps
 
 
 class MainScr:
@@ -438,173 +442,16 @@ class MainScr:
                     editorUtil.moveToBeginningOfLine(self)
 
                 elif c == 'w':
-                    """
-                    Walk through elements on line until you hit
-                    either punctuation (where you stop) or spaces
-                    (where you walk through until you hit something that isn't a space)
-                    """
-                    for i in range(repeats):
-
-                        # handle edge case of `w` on '\n' line
-                        if editorUtil.getCurrentChar(self) == '\n':
-                            if self.deleteMode is True:
-                                editorUtil.deleteCharacter(self, self.currentLine, x)
-                                self.drawLineNumbers()
-                            else:
-                                editorMovement.moveDown(self)
-                                self.currentLineIndex = 0
-                            continue
-
-                        if editorUtil.getNextChar(self) == '\n':
-                            if self.deleteMode is True:
-                                editorUtil.deleteCharacter(self, self.currentLine, x)
-                            else:
-                                editorMovement.moveDown(self)
-                                self.currentLineIndex = 0
-                            continue
-
-                        while True:
-
-                            if self.deleteMode is True:
-                                editorUtil.deleteCharacter(self, self.currentLine, x)
-                            else:
-                                editorMovement.moveRight(self)
-                            self.drawLines(self.editorscr, self.topLine)
-                            self.drawLineNumbers()
-                            c = editorUtil.getCurrentChar(self)
-
-                            if c in self.punctuationChars:
-                                break
-
-                            if editorUtil.getNextChar(self) == '\n':
-                                if self.deleteMode is True:
-                                    editorUtil.deleteCharacter(self, self.currentLine, x)
-                                    editorUtil.deleteCharacter(self, self.currentLine, x)
-                                else:
-                                    editorMovement.moveDown(self)
-                                    self.currentLineIndex = 0
-                                self.drawLines(self.editorscr, self.topLine)
-                                self.drawLineNumbers()
-                                break
-
-                            if c == ' ':
-                                while c == ' ':
-                                    if self.deleteMode is True:
-                                        editorUtil.deleteCharacter(self, self.currentLine, x)
-                                    else:
-                                        editorMovement.moveRight(self)
-                                    self.drawLines(self.editorscr, self.topLine)
-                                    self.drawLineNumbers()
-                                    c = editorUtil.getCurrentChar(self)
-                                    if editorUtil.getNextChar(self) == '\n':
-                                        break
-                                break
+                    editorJumps.jump_forward_one_word(self, repeats)
 
                 elif c == 'e':
-
-                    for i in range(repeats):
-                        # handle edge case of `e` on '\n' line
-                        if self.currentLine.value == '\n' or editorUtil.getNextChar(self) == '\n':
-                            if self.deleteMode is True:
-                                if self.currentLine.value == '\n':
-                                    editorUtil.deleteCharacter(self, self.currentLine, x)
-                                else:
-                                    editorUtil.deleteCharacter(self, self.currentLine, x)
-                                    editorUtil.deleteCharacter(self, self.currentLine, x)
-                                continue
-
-                            editorMovement.moveDown(self)
-                            self.currentLineIndex = 0
-                            continue
-
-                        if self.deleteMode is True:
-                            editorUtil.deleteCharacter(self, self.currentLine, x)
-                        else:
-                            editorMovement.moveRight(self)
-
-                        while editorUtil.getNextChar(self) == ' ':
-                            if self.deleteMode is True:
-                                editorUtil.deleteCharacter(self, self.currentLine, x)
-                            else:
-                                editorMovement.moveRight(self)
-                        while editorUtil.getNextChar(self) in string.ascii_letters:
-                            if self.deleteMode is True:
-                                editorUtil.deleteCharacter(self, self.currentLine, x)
-                            else:
-                                editorMovement.moveRight(self)
+                    editorJumps.jump_one_word_and_whitespace(self, repeats)
 
                 elif c == 'b':
-                    """
-                    Walk through elements on the line _backwards_
-                    until the character before is punctuation or a space
-                    """
+                    editorJumps.jump_backward_one_word(self, repeats)
 
-                    for i in range(repeats):
-
-                        moveForward = True
-                        editorMovement.moveLeft(self)
-                        self.currentLineIndex -= 1
-                        if self.currentLineIndex < 0:
-                            if self.currentLine.lastNode is None:
-                                self.currentLineIndex = 0
-                                continue
-                            editorMovement.moveUp(self)
-                            editorUtil.moveToEndOfLine(self)
-                            self.drawLines(self.editorscr, self.topLine)
-                            self.drawLineNumbers()
-                            self.currentLineIndex = 0
-
-                        if len(self.currentLine.value) <= 2:
-                            continue
-
-                        # now we are guaranteed a line
-                        # with at least two characters
-                        c = editorUtil.getCurrentChar(self)
-
-                        while c == ' ':
-                            editorMovement.moveLeft(self)
-                            self.drawLines(self.editorscr, self.topLine)
-                            self.drawLineNumbers()
-                            c = editorUtil.getCurrentChar(self)
-                            if c in self.punctuationChars:
-                                moveForward = False
-                                break
-                            if self.editorscr.getyx()[1] == 0:
-                                if self.currentLine == 0:
-                                    moveForward = False
-                                    break
-                                editorMovement.moveUp(self)
-                                self.drawLines(self.editorscr, self.topLine)
-                                self.drawLineNumbers()
-                                editorUtil.moveToEndOfLine(self)
-                                self.drawLines(self.editorscr, self.topLine)
-                                self.drawLineNumbers()
-
-                        while c in string.ascii_letters or c in string.digits:
-                            editorMovement.moveLeft(self)
-                            self.drawLines(self.editorscr, self.topLine)
-                            self.drawLineNumbers()
-                            c = editorUtil.getCurrentChar(self)
-                            if c in self.punctuationChars:
-                                moveForward = False
-                                break
-                            if self.currentLineIndex == 0:
-                                moveForward = False
-                                break
-                            if self.currentLineIndex < 0:
-                                self.currentLineIndex = 0
-                                break
-
-                        if moveForward:
-                            editorMovement.moveRight(self)
-
-                elif c == 'g':  # go to beginning of file
-                    self.currentLine = self.lineLinkedList.start
-                    self.topLine = self.lineLinkedList.start
-                    self.topLineCount = 1
-                    y = self.editorscr.getyx()[0]
-                    for i in range(repeats-1):
-                        editorMovement.moveDown(self)
+                elif c == 'g':
+                    editorJumps.jump_to_line(self, repeats)
 
                 elif c == '/':  # search function
                     patternToFind = editorUtil.getCmd(self, altDisplayChar='/')
@@ -733,8 +580,8 @@ class MainScr:
                         # delete the line
                         self.currentLine = editorUtil.deleteLine(self, self.currentLine)
 
-                    self.drawLines(self.editorscr, self.topLine)
-                    self.drawLineNumbers()
+                    #self.drawLines(self.editorscr, self.topLine)
+                    #self.drawLineNumbers()
 
                 elif ord(c) == 10:   # enter
                     if self.editorscr.getyx()[0] + 1 > self.editorscr.getmaxyx()[0] -2:
