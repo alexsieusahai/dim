@@ -1,6 +1,7 @@
 import string
 
 import Util.editorUtil as editorUtil
+import Util.drawUtil as drawUtil
 import movement.editorMovement as editorMovement
 
 def jump_forward_one_word(editorObj, repeats):
@@ -11,7 +12,7 @@ def jump_forward_one_word(editorObj, repeats):
         if editorUtil.getCurrentChar(editorObj) == '\n':
             if editorObj.deleteMode is True:
                 editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
-                editorObj.drawLineNumbers()
+                drawUtil.drawLineNumbers(editorObj)
             else:
                 editorMovement.moveDown(editorObj)
                 editorObj.currentLineIndex = 0
@@ -31,8 +32,8 @@ def jump_forward_one_word(editorObj, repeats):
                 editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
             else:
                 editorMovement.moveRight(editorObj)
-            editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
-            editorObj.drawLineNumbers()
+            drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
+            drawUtil.drawLineNumbers(editorObj)
             c = editorUtil.getCurrentChar(editorObj)
 
             if c in editorObj.punctuationChars:
@@ -45,8 +46,8 @@ def jump_forward_one_word(editorObj, repeats):
                 else:
                     editorMovement.moveDown(editorObj)
                     editorObj.currentLineIndex = 0
-                editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
-                editorObj.drawLineNumbers()
+                drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
+                drawUtil.drawLineNumbers(editorObj)
                 break
 
             if c == ' ':
@@ -55,8 +56,8 @@ def jump_forward_one_word(editorObj, repeats):
                         editorUtil.deleteCharacter(editorObj, editorObj.currentLine, x)
                     else:
                         editorMovement.moveRight(editorObj)
-                    editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
-                    editorObj.drawLineNumbers()
+                    drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
+                    drawUtil.drawLineNumbers(editorObj)
                     c = editorUtil.getCurrentChar(editorObj)
                     if editorUtil.getNextChar(editorObj) == '\n':
                         break
@@ -116,8 +117,8 @@ def jump_backward_one_word(editorObj, repeats):
                 continue
             editorMovement.moveUp(editorObj)
             editorUtil.moveToEndOfLine(editorObj)
-            editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
-            editorObj.drawLineNumbers()
+            drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
+            drawUtil.drawLineNumbers(editorObj)
             editorObj.currentLineIndex = 0
 
         if len(editorObj.currentLine.value) <= 2:
@@ -129,8 +130,8 @@ def jump_backward_one_word(editorObj, repeats):
 
         while c == ' ':
             editorMovement.moveLeft(editorObj)
-            editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
-            editorObj.drawLineNumbers()
+            drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
+            drawUtil.drawLineNumbers(editorObj)
             c = editorUtil.getCurrentChar(editorObj)
             if c in editorObj.punctuationChars:
                 moveForward = False
@@ -140,16 +141,16 @@ def jump_backward_one_word(editorObj, repeats):
                     moveForward = False
                     break
                 editorMovement.moveUp(editorObj)
-                editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
-                editorObj.drawLineNumbers()
+                drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
+                drawUtil.drawLineNumbers(editorObj)
                 editorUtil.moveToEndOfLine(editorObj)
-                editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
-                editorObj.drawLineNumbers()
+                drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
+                drawUtil.drawLineNumbers(editorObj)
 
         while c in string.ascii_letters or c in string.digits:
             editorMovement.moveLeft(editorObj)
-            editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
-            editorObj.drawLineNumbers()
+            drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
+            drawUtil.drawLineNumbers(editorObj)
             c = editorUtil.getCurrentChar(editorObj)
             if c in editorObj.punctuationChars:
                 moveForward = False

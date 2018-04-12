@@ -1,9 +1,10 @@
 import os  # to get the dirs
 
 from dataStructures.lineNode import LineNode
+import Util
+import movement
 
 import algorithms.kmp as kmp
-
 
 def lineHeight(scr, lineNode):
     """
@@ -99,7 +100,7 @@ def insertLine(editorObj, lineNode, cleanInsert=False):
 
     editorObj.lineLinkedList.length += 1
 
-    editorObj.drawLines(editorObj.editorscr, editorObj.topLine)
+    Util.drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
 
     return newNode
 
@@ -149,4 +150,13 @@ def find_pattern_in_syntax(editorObj, pattern_to_find):
         walk = walk.nextNode
         lineNumber += 1
     return matchBuffer
+
+def move_to_node_and_index(editorObj, lineNumber, lineIndex):
+    editorObj.currentLine = editorObj.topLine = editorObj.lineLinkedList.start
+    for i in range(lineNumber-1):
+        movement.editorMovement.moveDown(editorObj)
+        Util.drawUtil.drawLines(editorObj, editorObj.editorscr, editorObj.topLine)
+        editorObj.drawLineNumbers()
+    editorObj.currentLineIndex = lineIndex
+
 

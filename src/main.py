@@ -1,10 +1,6 @@
 import string  # ascii, digits lists
 import os  # for file subsystem (os.chdir, os.getcwd, etc)
 import sys  # for sys.exit
-import subprocess  # for BANG!
-import select  # polling
-import threading  # lets highlight and build the spellchecker
-import pipes  # to print out input
 # as asynchronously as gil (global interpreter lock) will let me
 
 import curses  # drawing the editor
@@ -18,6 +14,7 @@ from constants import State, WindowConstants
 import Util.fileUtil as fileUtil
 import Util.editorUtil as editorUtil
 import Util.cursesUtil as cursesUtil
+import Util.drawUtil as drawUtil
 import Util.syntaxHighlighting as syntaxHighlighting
 import Util.changeColorsUtil as changeColorsUtil
 
@@ -89,8 +86,8 @@ class MainScr:
 
         # draw everything for first iteration
         syntaxHighlighting.setColors(self, self.colorMap)
-        self.drawLineNumbers()
-        self.drawLines(self.editorscr, self.topLine)
+        drawUtil.drawLineNumbers(self)
+        drawUtil.drawLines(self, self.editorscr, self.topLine)
         self.setState(State.NORMAL)
         self.commandRepeats = ''
 
@@ -144,181 +141,19 @@ class MainScr:
         else:
             return 'UNKNOWN_STATE'
 
-    def move_to_node_and_index(self, lineNumber, lineIndex):
-        self.currentLine = self.topLine = self.lineLinkedList.start
-        for i in range(lineNumber-1):
-            editorMovement.moveDown(self)
-            self.drawLines(self.editorscr, self.topLine)
-            self.drawLineNumbers()
-        self.currentLineIndex = lineIndex
-
-    def drawLineNumbers(self):
-        # clear old data off the screen
-        self.linenumscr.clear()
-
-        (moveY, moveX) = (0, 0)
-
-        # draw line numbers
-        lineToDraw = self.topLine
-        y = 0
-        lineIndex = self.topLineCount
-        self.linenumscr.move(0, 0)
-        while y < self.linenumscr.getmaxyx()[0]-1:
-            self.linenumscr.addstr(str(lineIndex))
-
-            if lineToDraw == self.currentLine:
-                moveY = y + self.currentLineIndex//self.editorscr.getmaxyx()[1]
-                for i in range(self.currentLineIndex):
-                    c = self.currentLine.value[i]
-                    if c == '\t':
-                        moveX += 8
-                    else:
-                        moveX += 1
-                    if moveX > self.editorscr.getmaxyx()[1]:
-                        moveX -= self.editorscr.getmaxyx()[1]
-                    moveX = moveX % self.editorscr.getmaxyx()[1]
-
-                self.currentLineCount = lineIndex
-                if moveX <= -1:
-                    moveX = 0
-
-            y += editorUtil.lineHeight(self.editorscr, lineToDraw)
-
-            if lineToDraw.nextNode is None:  # ran out of nodes
-                break
-            lineToDraw = lineToDraw.nextNode
-            lineIndex += 1
-
-            if y > self.linenumscr.getmaxyx()[0]-1:
-                break
-            self.linenumscr.move(y, 0)
-
-        self.editorscr.move(moveY, moveX)
-
-    def drawLines(self, scr, topLine):
-        """
-        Takes in a scr object from which it draws on
-
-        Draws the line numbers and the lines themselves onto the ui
-        O(n) where n is the number of blocks that can fit onto the terminal,
-        but since n is very small and theta(n) is a fraction of
-        n usually < n/2 this is fine.
-        """
-        # clear the old data off of the screen
-        scr.clear()
-
-        # draw the lines themselves
-        lineToDraw = topLine
-        scr.move(0, 0)
-        cursorY = 0
-
-        while lineToDraw is not None:
-
-            if scr.getyx()[0] + editorUtil.lineHeight(self.editorscr, lineToDraw) > scr.getmaxyx()[0]-1:
-                # handle no space at bottom when scrolling up
-                scr.addstr('@')
-                break
-            i = 0
-            for c in lineToDraw.value:
-                colorToDraw = lineToDraw.colors[i]
-                scr.addstr(c, curses.color_pair(colorToDraw))
-                currentX = scr.getyx()[1]
-                if currentX+1 > scr.getmaxyx()[1]-1:
-                    # if we have reached the end of the line horizontally
-                    cursorY += 1
-                    scr.move(cursorY, 0)
-                i += 1
-
-            if scr.getyx()[0] + 1 > scr.getmaxyx()[0]-1:
-                break
-            scr.move(cursorY + 1, 0)
-            cursorY += 1
-            lineToDraw = lineToDraw.nextNode
-
-        # move cursor to where it should be as
-        # specified by currentLine and currentLineIndex, refresh and move on
-        self.linenumscr.refresh()
-        scr.refresh()
-
-    def drawStatus(self):
-        """
-        Draws status using whatever is set as default
-        """
-        self.statusscr.clear()
-        checkStr = (self.getStateStr() + '  ' + os.getcwd() +
-                            '/' + self.fileName + '  ' + 'Line ' +
-                            str(self.currentLineCount) +
-                            ' Column ' + str(self.currentLineIndex))
-        if len(checkStr) > self.statusscr.getmaxyx()[1]:
-            checkStr = checkStr[:self.statusscr.getmaxyx()[1]-2]
-        self.statusscr.addstr(checkStr)
-        self.statusscr.refresh()
-
-    def outputTerminalChatter(self, cmd):
-        """
-        Output whatever process sends to stdout in real time
-        """
-        process = subprocess.Popen(cmd.split(), stdout=subprocess.PIPE)
-
-        # clean the screen to prepare for output
-        self.editorscr.clear()
-
-        # save these for later
-        tempLinkedList = self.lineLinkedList
-        tempPointer = self.topLine
-
-        outputStr = ''
-
-        while True:
-            out = process.stdout.read(1).decode()
-            if out == '' and process.poll() is not None:
-                break
-            if out != '':
-                outputStr += out
-                consoleChatterLines = LineLinkedList(outputStr.split('\n'))
-
-                # set these so you can use drawLines
-                self.lineLinkedList = consoleChatterLines
-                self.topLine = self.lineLinkedList.start
-
-                # draw the output
-                self.drawLines(self.editorscr, self.topLine)
-                self.drawLineNumbers()
-                self.editorscr.refresh()
-
-
-        # kill the pipe
-        process.stdout.close()
-
-        # now wait for the user to send some ready
-        # confirmation that he's seen the output and he's good to go
-        self.statusscr.clear()
-        self.statusscr.addstr('Please press any key to proceed.')
-        self.statusscr.refresh()
-
-        self.editorscr.getch()  # wait for confirmation
-
-        # set the old lines and topline back
-        self.lineLinkedList = tempLinkedList
-        self.topLine = tempPointer
-
-        self.drawLines(self.editorscr, self.topLine)
-        self.drawLineNumbers()
-        self.editorscr.refresh()
-
     def setUpFileHighlighting(self):
-        directory = self.dirs.start
-        while directory is not None:
-            color = self.colorMap['FILE']
-            if os.path.isdir(directory.value):
-                color = self.colorMap['FOLDER']
-            for i in range(len(directory.value)):
-                directory.colors[i] = color
-            directory = directory.nextNode
+            directory = self.dirs.start
+            while directory is not None:
+                color = self.colorMap['FILE']
+                if os.path.isdir(directory.value):
+                    color = self.colorMap['FOLDER']
+                for i in range(len(directory.value)):
+                    directory.colors[i] = color
+                directory = directory.nextNode
 
     def drawAndRefreshFileNavigation(self):
         self.filenavscr.clear()
-        self.drawLines(self.filenavscr, self.topDir)
+        drawUtil.drawLines(self, self.filenavscr, self.topDir)
 
     def runFileNavigation(self, breakEarly=False):
         self.dirs = LineLinkedList(editorUtil.getDirs())
@@ -361,8 +196,8 @@ class MainScr:
                     self.topLine = self.currentLine = self.lineLinkedList.start
                     self.currentLineIndex = 0
                     syntaxHighlighting.setColors(self, self.colorMap)
-                    self.drawLines(self.editorscr, self.topLine)
-                    self.drawLineNumbers()
+                    drawUtil.drawLines(self, self.editorscr, self.topLine)
+                    drawUtil.drawLineNumbers(self)
 
                     # reset file dir
                     self.currentDir = self.topDir = self.dirs.start
@@ -443,7 +278,7 @@ class MainScr:
                     # go to first match
                     if self.matchBuffer:
                         (lineNumber, lineIndex) = self.matchBuffer[0]
-                        self.move_to_node_and_index(lineNumber, lineIndex)
+                        editorUtil.move_to_node_and_index(self, lineNumber, lineIndex)
                         temp = self.matchBuffer[0]
                         del self.matchBuffer[0]
                         self.matchBuffer.append(temp)
@@ -453,7 +288,7 @@ class MainScr:
                     # jump to the next thing in the match buffer
                     if self.matchBuffer != []:
                         (lineNumber, lineIndex) = self.matchBuffer[0]
-                        self.move_to_node_and_index(lineNumber, lineIndex)
+                        editorUtil.move_to_node_and_index(self, lineNumber, lineIndex)
                         temp = self.matchBuffer[0]
                         del self.matchBuffer[0]
                         self.matchBuffer.append(temp)
@@ -531,8 +366,8 @@ class MainScr:
                 self.deleteMode = False
                 self.commandRepeats = ''
 
-            self.drawLines(self.editorscr, self.topLine)
-            self.drawLineNumbers()
+            drawUtil.drawLines(self, self.editorscr, self.topLine)
+            drawUtil.drawLineNumbers(self)
 
             if self.state == State.INSERT or self.state == State.APPEND:
 
@@ -571,31 +406,28 @@ class MainScr:
                         else:
                             break
 
-                    self.drawLines(self.editorscr, self.topLine)
-                    self.drawLineNumbers()
-
                 else:  # any other character
+                    #editorUtil.insert_character(self.currentLine, self.currentLineIndex, c)
                     self.currentLine.value = (self.currentLine.value[:self.currentLineIndex] +
                             c + self.currentLine.value[self.currentLineIndex:])
                     self.currentLineIndex += 1
                     self.currentLine.colors.append(0)
-                    self.drawLines(self.editorscr, self.topLine)
-                    self.drawLineNumbers()
 
             elif self.state == State.VISUAL:
                 cursesUtil.kill(self)
                 raise NotImplementedError
 
             elif self.state == State.COMMAND_LINE:
-                cmd = editorUtil.getCmd(self)
 
-                if cmd == chr(27):  # escape character
+                cmd_string = editorUtil.getCmd(self)
+
+                if cmd_string == chr(27):  # escape character
                     self.setState(State.NORMAL)
                     continue
-                cmd = cmd.strip(' \t\n\r')
+                cmd_list = cmd_string.strip(' \t\n\r')
                 # tokenize based on '|'
-                cmds = cmd.split('|')
-                for i in cmds:
+                cmds = cmd_list.split('|')
+                for cmd in cmds:
                     for cmdChar in cmd:
                         if cmdChar == 'w':
                             args = cmd.split()
@@ -629,7 +461,7 @@ class MainScr:
                             if cmd[0] == '!':
                                 cmd = cmd[1:]
                             cursesUtil.kill(self)
-                            self.outputTerminalChatter(cmd)
+                            drawUtil.drawTerminalChatter(self, cmd)
 
                             # bring what we killed back to life
                             cursesUtil.birth()
@@ -642,19 +474,18 @@ class MainScr:
 
             elif self.state == State.OPTIONS:
                 self.editorscr.clear()
-                optionsText = LineLinkedList(['Change Colors'
-                                                            ])
 
                 # save all of the pointers for later
                 tempLinkedList = self.lineLinkedList
                 tempCurrentLine = self.currentLine
                 tempTopLine = self.topLine
 
+                optionsText = LineLinkedList(['Change Colors'])
                 self.lineLinkedList = optionsText
                 self.topLine = self.currentLine = self.lineLinkedList.start
 
-                self.drawLineNumbers()
-                self.drawLines(self.editorscr, self.topLine)
+                drawUtil.drawLineNumbers(self)
+                drawUtil.drawLines(self, self.editorscr, self.topLine)
                 self.editorscr.refresh()
                 self.linenumscr.refresh()
 
@@ -692,9 +523,9 @@ class MainScr:
 
             # draw everything again
             syntaxHighlighting.setColors(self, self.colorMap)
-            self.drawStatus()  # draw the status bar text on status bar
-            self.drawLines(self.editorscr, self.topLine)
-            self.drawLineNumbers()
+            drawUtil.drawStatus(self)  # draw the status bar text on status bar
+            drawUtil.drawLines(self, self.editorscr, self.topLine)
+            drawUtil.drawLineNumbers(self)
 
 
 if __name__ == "__main__":

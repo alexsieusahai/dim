@@ -1,4 +1,5 @@
 import Util.editorUtil as editorUtil
+import Util.drawUtil as drawUtil
 
 def moveDown(editorObj):
     """
@@ -39,7 +40,7 @@ def moveUp(editorObj):
         editorObj.currentLine = editorObj.currentLine.lastNode
         editorObj.topLine = editorObj.topLine.lastNode
         editorObj.topLineCount -= 1
-        editorObj.drawLineNumbers()
+        drawUtil.drawLineNumbers(editorObj)
 
 def moveLeft(editorObj):
     """
