@@ -12,7 +12,7 @@ def initColors(dimDir, fileName):
         temp = os.getcwd()  # save it for later so we can go back
         os.chdir(dimDir)
 
-        config = loadConfig.getColorConfig('themes/'+fileName)
+        config = loadConfig.getColorConfig(dimDir+'/themes/'+fileName)
         # get the general editor background, set to 0
         colorMap = {'BACKGROUND':10, 'STATUS_BACKGROUND':11}
         curses.init_color(10,

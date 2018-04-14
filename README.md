@@ -2,8 +2,11 @@
 `dim` editing its own source code below
 ![Imgur](https://i.imgur.com/4PFgSr6.png)
 ## How to run
-Navigate to `.../dim/src`  
-`python3 main.py`
+Navigate to `dim`, and type  
+`python3 setup.py`  
+to install the `dim` alias. Then type `dim` to run!  
+NOTE:  
+Tested only on `zsh` and `bash`. If this doesn't work for your shell please log it as an issue, containing the name of your shell and your config (`'bashrc`, `zshrc`, etc) file if you can.
 
 ## Usage!
 
